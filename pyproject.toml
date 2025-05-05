@@ -1,0 +1,20 @@
+[project]
+name = "mcp-xhs-publisher"
+version = "0.1.0"
+description = "小红书自动发布的 MCP 工具，支持文本、图文、视频笔记发布。"
+authors = [
+    { name = "hexonal", email = "w741069229@gmail.com" }
+]
+requires-python = ">=3.11"
+readme = "README.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.dependencies]
+xhs = ">=0.2.0"
+requests = ">=2.31.0"
+pydantic = ">=1.10.0"
+
+# 如需官方 mcp sdk，请补充如下依赖
+# mcp-sdk = ">=0.1.0" 

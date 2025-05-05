@@ -1,0 +1,44 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Model Context Protocol (MCP) 开发规范
+
+本规范基于 [MCP 官方文档](mdc:https:/modelcontextprotocol.io/introduction) 及 [Python SDK](mdc:https:/github.com/modelcontextprotocol/python-sdk) 编写，适用于本项目所有 MCP 相关开发。
+
+## 1. 架构与核心概念
+- MCP 采用客户端-服务端架构，支持多种 LLM、数据源和工具的标准化集成。
+- 主要角色：MCP Host（如 Claude Desktop）、MCP Client、MCP Server、本地/远程数据源。
+- 三大核心原语：Prompts（交互模板）、Resources（上下文数据）、Tools（可调用工具）。
+
+## 2. 服务端开发要点
+- 推荐使用官方 Python SDK（[src/mcp](mdc:src/mcp)）实现 Server。
+- Server 必须声明自身 capabilities（如 prompts、resources、tools、logging、completion）。
+- 支持生命周期管理（lifespan API），可在启动/关闭时初始化和清理资源。
+- 通过装饰器注册 Prompts、Resources、Tools 等 handler。
+- 工具（Tool）应为 LLM 可控，具备幂等性和安全性。
+
+## 3. 客户端开发要点
+- 推荐使用官方 Python SDK 提供的高层 ClientSession。
+- 支持通过 stdio、socket 等多种 transport 连接 MCP Server。
+- 客户端可列举/调用服务端的 Prompts、Resources、Tools。
+- 支持自定义采样回调（sampling_callback）以适配不同 LLM。
+
+## 4. 能力声明与扩展
+- Server 初始化时需通过 InitializationOptions 明确声明支持的能力。
+- 支持扩展 experimental_capabilities 字段以适配新特性。
+- Prompts/Resources/Tools 支持动态增删改查。
+
+## 5. 最佳实践
+- 遵循 [Google Python 风格指南](mdc:https:/zh-google-styleguide.readthedocs.io/en/latest/google-python-styleguide/python_style_rules.html) 编写代码。
+- 遵循 [Python 包结构与分发规范](mdc:https:/packaging.pythonlang.cn/en/latest/overview) 组织项目。
+- 工具函数应具备类型注解，接口参数/返回值应严格校验。
+- 资源暴露需考虑权限与安全，避免敏感数据泄露。
+- Prompts 设计应简洁明了，便于 LLM 理解和调用。
+
+## 6. 参考文件
+- [MCP Python SDK 源码](mdc:src/mcp)
+- [MCP 官方文档](mdc:https:/modelcontextprotocol.io/introduction)
+- [Google Python 风格指南](mdc:https:/zh-google-styleguide.readthedocs.io/en/latest/google-python-styleguide/python_style_rules.html)
+- [Python 包结构与分发](mdc:https:/packaging.pythonlang.cn/en/latest/overview)

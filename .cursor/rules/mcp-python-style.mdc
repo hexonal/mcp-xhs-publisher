@@ -1,0 +1,40 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# MCP Python 代码风格与语言规范
+
+本规范结合 [Google Python 风格指南](mdc:https:/zh-google-styleguide.readthedocs.io/en/latest/google-python-styleguide/python_style_rules.html) 及 MCP 官方推荐，适用于 MCP 相关 Python 代码开发。
+
+## 1. 类型注解
+- 所有函数/方法参数与返回值必须添加类型注解。
+- MCP 工具（Tool）接口应严格校验参数类型，避免类型不一致导致的运行时错误。
+
+## 2. 包与模块结构
+- 遵循 [Python 包结构与分发规范](mdc:https:/packaging.pythonlang.cn/en/latest/overview)，每个功能模块单独成包，避免大杂烩。
+- MCP 相关代码建议集中于 `mcp/` 或 `src/mcp/` 目录下。
+
+## 3. 接口与类设计
+- MCP Server/Client 类应采用组合优于继承，便于扩展。
+- 工具（Tool）函数应幂等、无副作用，参数通过 dict 传递时需文档化所有字段。
+- Prompts/Resources/Tools 的 handler 建议使用 async/await，提升并发能力。
+
+## 4. 文档与注释
+- 所有公开函数、类、模块必须有 docstring，格式遵循 Google 风格。
+- 复杂逻辑需有行内注释，说明设计意图。
+
+## 5. 命名规范
+- 变量、函数、方法名使用小写加下划线（snake_case）。
+- 类名使用大驼峰（CamelCase）。
+- 常量全大写加下划线。
+
+## 6. 其它约定
+- 禁止使用通配符 import（如 from x import *）。
+- 异常处理应精确捕获，避免裸 except。
+- MCP 相关 handler 注册建议用装饰器方式，便于自动发现与管理。
+
+## 7. 参考链接
+- [Google Python 风格指南](mdc:https:/zh-google-styleguide.readthedocs.io/en/latest/google-python-styleguide/python_style_rules.html)
+- [Google Python 语言规范](mdc:https:/zh-google-styleguide.readthedocs.io/en/latest/google-python-styleguide/python_language_rules.html)
+- [Python 包结构与分发](mdc:https:/packaging.pythonlang.cn/en/latest/overview)
