@@ -20,7 +20,7 @@ def sign(uri, data=None, a1="", web_session=""):
 
 
 if __name__ == '__main__':
-    xhs_client = XhsClient(sign=sign)
+    xhs_client = XhsClient(sign=sign,timeout=30)
     print(datetime.datetime.now())
     qr_res = xhs_client.get_qrcode()
     qr_id = qr_res["qr_id"]
