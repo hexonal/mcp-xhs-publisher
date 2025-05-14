@@ -1,0 +1,140 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# MCP 服务器指南 (MCP Server Guidelines)
+
+本指南为开发 MCP (Model Context Protocol) 服务器应用程序（如 `coze-mcp-server`）提供详细的规范和最佳实践。MCP 服务器的核心职责是向 MCP 客户端（以及通过客户端操作的 LLM）安全有效地暴露数据（资源）和功能（工具）。
+
+参考：
+*   [MCP 核心架构指南](mdc:rules/mcp-architecture-general.mdc)
+*   [MCP 资源指南](mdc:rules/mcp-resources.mdc) (用于资源定义的详细规范)
+*   [MCP 工具指南](mdc:rules/mcp-tools.mdc) (用于工具定义的详细规范)
+*   [MCP 高级概念指南](mdc:rules/mcp-advanced-concepts.mdc)
+*   [Model Context Protocol Python SDK](mdc:https:/github.com/modelcontextprotocol/python-sdk)
+*   `coze-mcp-server` 项目 ([GitHub](mdc:https:/github.com/coze-dev/coze-mcp-server)) (作为一个实现了这些原则的示例项目)
+
+## 1. 服务器核心职责
+
+根据 [MCP 核心架构指南](mdc:rules/mcp-architecture-general.mdc) 的定义，MCP 服务器的关键职责包括：
+
+*   **实现 MCP 协议**: 严格遵守 MCP 规范，处理来自客户端的请求并发送正确的响应和通知。
+*   **暴露能力**: 主要通过以下方式：
+    *   **资源**: 定义、管理并通过 MCP 协议方法（如 `listResources`, `retrieveResource`, `subscribeToResource`）暴露数据和内容。详细定义和实现指南参见 [MCP 资源指南](mdc:rules/mcp-resources.mdc)。
+    *   **工具**: 定义、实现并通过 MCP 协议方法（如 `listTools`, `executeTool`）暴露具体操作。详细定义和实现指南参见 [MCP 工具指南](mdc:rules/mcp-tools.mdc)。
+    *   **提示 (Prompts)**: (如果适用) 定义并暴露可重用的提示模板。参见 [MCP 高级概念指南](mdc:rules/mcp-advanced-concepts.mdc)。
+*   **连接管理**: 监听来自客户端的连接请求，并管理活动的客户端会话。
+*   **安全性**: 确保对数据和功能的访问是安全的，实施必要的认证和授权机制。
+*   **配置**: 提供清晰的配置选项。特定项目的 `[README.md](mdc:README.md)` (例如 `coze-mcp-server` 的 README) 可以作为如何记录这些配置的良好示例。
+
+## 2. 实现资源和工具的最佳实践
+
+服务器在实现其核心功能（即提供资源和工具）时，应遵循各自的详细指南：
+
+*   **资源实现**: 请严格遵循 [MCP 资源指南](mdc:rules/mcp-resources.mdc) 中的规范和最佳实践。
+*   **工具实现**: 请严格遵循 [MCP 工具指南](mdc:rules/mcp-tools.mdc) 中的规范和最佳实践。
+
+确保这些实现与 MCP 协议规范完全兼容，并且易于客户端发现和使用。
+
+## 3. 服务器端开发最佳实践
+
+*   **使用 MCP SDK**: 强烈推荐使用官方的 MCP Python SDK (通常作为 `mcp` 包通过 pip 安装，其源码和详细文档/示例见 [modelcontextprotocol/python-sdk](mdc:https:/github.com/modelcontextprotocol/python-sdk))。该 SDK 极大地简化了服务器开发：
+    *   它能处理大部分底层 MCP 协议的复杂性。
+    *   提供了如 `FastMCP` 这样的高级抽象来快速搭建服务器，并通过装饰器（例如 `@mcp.resource`, `@mcp.tool`, `@mcp.prompt`）等便捷方式来定义资源、工具和提示，如其 README 中的示例所示。
+    *   对于需要更细致控制的场景，SDK 也支持使用低层级服务器接口。
+    *   可以参考 `coze-mcp-server` 项目，它是一个基于 Python SDK 实现 MCP 服务器的良好示例，展示了这些 SDK 特性的应用。
+
+    下面是两个来自官方 SDK README 的示例，展示了 `FastMCP` 和装饰器的用法：
+
+    **示例 1: Echo Server**
+    ```python
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("Echo")
+
+
+    @mcp.resource("echo://{message}", 
+                  description="A simple echo resource that returns formatted messages",
+                  mimetype="text/plain")
+    def echo_resource(message: str) -> str:
+        """Echo a message as a resource"""
+        return f"Resource echo: {message}"
+
+
+    @mcp.tool(
+        name="echo_message",
+        description="Echoes back the provided message as a string"
+    )
+    def echo_tool(message: str) -> str:
+        """Echo a message as a tool"""
+        return f"Tool echo: {message}"
+
+
+    @mcp.prompt(
+        name="echo_prompt",
+        description="Creates a simple prompt with the user's message",
+        parameters=[{"name": "message", "description": "The message to process", "required": True}]
+    )
+    def echo_prompt(message: str) -> str:
+        """Create an echo prompt"""
+        return f"Please process this message: {message}"
+    ```
+
+    **示例 2: SQLite Explorer**
+    ```python
+    import sqlite3
+
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("SQLite Explorer")
+
+
+    @mcp.resource("schema://main", 
+                  description="Provides the database schema for inspection",
+                  mimetype="text/plain",
+                  cacheable=True)
+    def get_schema() -> str:
+        """Provide the database schema as a resource"""
+        conn = sqlite3.connect("database.db")
+        schema = conn.execute("SELECT sql FROM sqlite_master WHERE type='table'").fetchall()
+        return "\n".join(sql[0] for sql in schema if sql[0])
+
+
+    @mcp.tool(
+        name="execute_sql_query",
+        description="Executes an SQL query against the database and returns the results as formatted text. Handles errors gracefully."
+    )
+    def query_data(sql: str) -> str:
+        """Execute SQL queries safely"""
+        conn = sqlite3.connect("database.db")
+        try:
+            result = conn.execute(sql).fetchall()
+            return "\n".join(str(row) for row in result)
+        except Exception as e:
+            return f"Error: {str(e)}"
+    ```
+
+    注意：与 `@mcp.tool()` 类似，建议为 `@mcp.resource()` 和 `@mcp.prompt()` 装饰器也提供详细的参数：
+    * 对于资源，提供 `description`、`mimetype` 和适当的缓存策略 (`cacheable`)
+    * 对于提示，提供 `name`、`description` 和清晰的 `parameters` 定义
+    * 这些详细定义对于 LLM 和自动化工具理解和有效使用你的 MCP 服务器非常重要
+
+*   **模块化设计**: 将服务器逻辑划分为清晰的模块。模块化设计应遵循 [项目结构指南](mdc:rules/project-structure.mdc) 中关于包架构的建议。
+*   **异步处理**: 使用异步编程模型（如 Python 的 `asyncio`）来高效处理并发请求。
+*   **错误处理与日志记录**:
+    *   实现全面的错误处理机制，向客户端返回符合 MCP 规范的错误响应。
+    *   进行充分的日志记录，便于调试和监控。
+*   **可测试性**: 编写单元测试和集成测试。
+*   **性能与可伸缩性**: 根据预期的负载考虑服务器的性能。
+*   **文档**: 为服务器提供的能力、配置选项和部署说明编写清晰的文档 (例如，项目的 `[README.md](mdc:README.md)`)。
+*   **版本控制与依赖管理**: 参考 [使用 uv 打包与依赖管理指南](mdc:rules/packaging-with-uv.mdc) 和 [Python 编码标准指南](mdc:rules/python-coding-standards.mdc)。
+
+## 4. 安全注意事项
+
+*   **输入验证**: 严格验证来自客户端的所有输入。
+*   **权限控制**: 实现适当的访问控制机制。
+*   **资源限制**: 防止客户端滥用资源。
+*   **依赖安全**: 定期扫描和更新第三方依赖。
+
+遵循这些指南将有助于构建健壮、安全且符合 MCP 规范的服务器应用程序。

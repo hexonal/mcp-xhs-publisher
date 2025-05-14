@@ -1,0 +1,85 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 使用 uv 打包与依赖管理指南 (Packaging and Dependency Management with uv Guide)
+
+本指南为使用 `uv` 进行 Python 项目的依赖管理和打包（特别关注旨在发布到 PyPI 的项目，并以 `coze-mcp-server` 作为一个应用了许多这些原则的示例项目）提供规范和最佳实践。
+`uv` 是一个非常快速的 Python 包安装器和解析器，旨在替代 `pip` 和 `pip-tools` 的部分功能。
+
+参考：
+*   `coze-mcp-server` 项目中的 `[pyproject.toml](mdc:pyproject.toml)` 和 `[uv.lock](mdc:uv.lock)` (作为实际项目配置的示例)。
+*   `coze-mcp-server` `[README.md](mdc:README.md)` 中的安装说明 (展示了 `uv` 在实际使用中的一个场景)。
+
+## 1. `pyproject.toml` 核心配置
+
+`[pyproject.toml](mdc:pyproject.toml)` 是项目的核心配置文件，用于声明元数据、依赖项和构建系统。其在项目中的位置和基本作用可参考 [项目结构指南](mdc:rules/project-structure.mdc) 中关于配置文件的说明。
+
+### 1.1. `[project]` 表
+*   **`name`**: 项目的规范名称，即在 PyPI 上发布的名称 (e.g., `coze-mcp-server`)。
+*   **`version`**: 项目版本号，遵循 [PEP 440](mdc:https:/peps.python.org/pep-0440) (e.g., `"0.0.4"`)。动态版本控制也是一种选择，但需谨慎。
+*   **`description`**: 项目的简短描述。
+*   **`readme`**: 指定 `README` 文件 (e.g., `"README.md"`)。
+*   **`requires-python`**: 指定项目兼容的 Python 版本 (e.g., `">=3.8"`)。
+*   **`license`**: 指定许可证，例如 ` {text = "MIT License"}` 或 `{file = "LICENSE"}`。
+*   **`authors` / `maintainers`**: 列出作者和维护者信息。
+*   **`dependencies`**: 列出项目运行所必需的核心依赖项，带有版本说明符 (e.g., `fastapi >= 0.100.0, < 0.101.0`)。
+    *   尽量使用兼容版本 (`~=`), 范围版本 (`>=, <`) 或精确版本 (`==`) 来平衡灵活性和稳定性。
+*   **`[project.optional-dependencies]`**: 定义可选的依赖组，例如 `dev`, `test`。
+    *   `coze-mcp-server` 在 `pyproject.toml` 中定义了 `dev` 依赖。
+    *   安装可选依赖：`uv pip install .[dev]`
+    *   **针对特定功能（如 CLI 工具）的可选依赖**: 许多包（例如 `mcp` Python SDK）会通过可选依赖项提供额外功能。例如，如果一个包提供了命令行工具，它可能会通过一个名为 `cli` 的 "extra" 来提供。安装时可以使用 `uv pip install package_name[cli]`。
+        *   参考 `modelcontextprotocol/python-sdk` 的 README ([mdc:https:/github.com/modelcontextprotocol/python-sdk/blob/main/README.md])，其中提到了 "standalone MCP development tools" (例如 `mcp run`, `mcp dev`)。这类工具通常就是通过类似 `mcp[cli]` 的方式安装的。开发者应查阅对应包的 `pyproject.toml` 或文档来确定可用的 "extras"。
+*   **`[project.urls]`**: 提供项目的相关链接，如 `Homepage`, `Repository`, `Bug Tracker`。
+*   **`[project.scripts]`**: (如果适用) 定义通过命令行可执行的脚本。对于 `coze-mcp-server` 这种通过 `python -m` 运行的包，可能不直接在这里定义，而是通过包的 `__main__.py`。
+    *   `coze-mcp-server` 的 `README.md` 中配置 Claude.app/Zed 时，使用了 `python -m coze_mcp_server` 或 `uvx coze-mcp-server`。
+*   **`classifiers`**: 提供 PyPI 分类器，帮助用户发现项目。
+
+### 1.2. `[build-system]` 表
+*   声明构建后端。
+    *   `requires = ["hatchling"]` (Hatchling 是一个流行的现代构建后端)
+    *   `build-backend = "hatchling.build"`
+    *   `backend-path = ["."]` (如果 `hatch_build.py` 在项目根目录)
+    或者使用其他构建后端如 `setuptools`。
+
+## 2. 使用 `uv` 管理依赖
+
+*   **安装依赖**: `uv pip install -r requirements.txt` (如果使用 requirements 文件) 或 `uv pip install <package>`。
+    对于 `coze-mcp-server`，通常是 `uv pip install .` (安装当前项目) 或 `uv pip install .[dev]` (安装带开发依赖的项目)。
+*   **同步环境**: `uv pip sync requirements.lock` (或 `uv.lock` 如果直接支持) 或 `uv pip sync pyproject.toml` (如果 `uv` 支持直接从 `pyproject.toml` 同步 pinned 版本)。
+*   **生成锁定文件**: `coze-mcp-server` 使用 `[uv.lock](mdc:uv.lock)`。
+    *   通常，锁定文件由 `uv pip compile pyproject.toml -o requirements.lock` (或类似命令，具体取决于 `uv` 的工作流) 生成。
+    *   确保将 `uv.lock` (或等效的锁定文件) 提交到版本控制，以保证构建的可复现性。
+*   **虚拟环境**: `uv` 可以与虚拟环境（如 `venv`）很好地配合工作。
+    *   创建环境: `python -m venv .venv` (或 `uv venv`)
+    *   激活环境: `source .venv/bin/activate`
+    *   之后在此环境中运行 `uv` 命令。
+
+## 3. 打包与发布到 PyPI
+
+*   **构建分发包**: 通常使用构建工具如 `hatch` 或 `build`。
+    *   `python -m build` 或 `hatch build`
+    *   这将会在 `dist/` 目录下生成 `sdist` (源码分发包) 和 `wheel` (构建分发包)。
+*   **检查分发包**: `twine check dist/*`
+*   **上传到 PyPI**: `twine upload dist/*`
+    *   需要 PyPI 账户和 API token。
+    *   推荐先上传到 TestPyPI进行测试：`twine upload --repository testpypi dist/*`
+
+## 4. `coze-mcp-server` 的实践 (作为示例)
+
+`coze-mcp-server` 项目在其依赖管理和推荐运行方式上展示了一些与 `uv` 相关的现代 Python 实践：
+
+*   其 `[README.md](mdc:README.md)` 推荐使用 `uvx coze-mcp-server` 直接运行，这利用了 `uv` 从 PyPI 或其他源动态获取并执行包的能力，有时无需用户显式将包安装到环境中。
+*   其 `[pyproject.toml](mdc:pyproject.toml)` 文件遵循标准的 PEP 格式 (如 PEP 621) 来声明项目元数据、构建系统 (如 `hatchling`) 和依赖项。这种标准化的 `pyproject.toml` 文件是 `uv` 等现代 Python 工具处理项目的基础。
+*   项目中包含的 `[uv.lock](mdc:uv.lock)` 文件表明其依赖项已被 `uv` 解析和锁定，有助于确保不同环境下依赖的一致性。
+
+这些实践体现了 `uv` 在简化依赖管理和执行方面的能力。
+
+## 5. 最佳实践
+
+*   定期更新依赖项并重新生成锁定文件，以获取安全更新和新功能。
+*   在 CI/CD 流程中使用锁定的依赖项进行测试和构建。
+*   保持 `pyproject.toml` 文件的清晰和最新。
+
+遵循这些指南，可以有效地使用 `uv` 管理项目依赖，并顺利地将 Python 包发布到 PyPI。

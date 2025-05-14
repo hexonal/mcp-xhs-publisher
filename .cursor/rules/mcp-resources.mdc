@@ -1,0 +1,51 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# MCP 资源指南 (MCP Resources Guide)
+
+本指南详细说明了如何在 MCP (Model Context Protocol) 服务器（如 `coze-mcp-server`）中定义、暴露和管理资源。资源是 MCP 的核心概念之一，代表了服务器可以提供给 LLM 使用的数据和内容。
+
+参考：[MCP Resources Concepts](mdc:https:/modelcontextprotocol.io/docs/concepts/resources)
+
+## 1. 资源定义
+
+*   **唯一标识 (URI)**: 每个资源都必须有一个唯一的 URI (Uniform Resource Identifier)。这个 URI 用于在 MCP 网络中寻址和引用资源。
+    *   URI 格式通常为 `mcp://<server_name>/<resource_type>/<resource_id>`。
+    *   `<server_name>` 应与服务器注册的名称一致。
+    *   `<resource_type>` 和 `<resource_id>` 应清晰地描述资源的类型和具体实例。
+*   **内容 (Content)**: 资源的主要部分是其内容，可以是文本、代码、JSON 数据等。内容应结构化且易于 LLM 理解和处理。
+*   **元数据 (Metadata)**: 资源可以包含元数据，提供关于内容的附加信息，如创建日期、作者、MIME 类型等。
+*   **权限 (Permissions)**: 服务器应能控制对资源的访问权限，确保只有授权的客户端可以读取或修改资源。
+
+## 2. 资源暴露
+
+*   **列举资源 (`listResources`)**: 服务器必须实现 `listResources` 方法，允许客户端发现可用的资源。可以支持过滤和分页。
+*   **订阅资源 (`subscribeToResource`)**: 对于可能随时间变化的资源，服务器应支持客户端通过 `subscribeToResource` 订阅资源更新。当资源发生变化时，服务器会向订阅的客户端发送 `resourceChanged` 通知。
+*   **检索资源 (`retrieveResource`)**: 客户端可以通过 `retrieveResource` 请求特定 URI 的资源内容和元数据。
+
+## 3. `coze-mcp-server` 中的资源示例
+
+`coze-mcp-server` 暴露了与 Coze 平台相关的资源，例如：
+
+*   **工作空间 (Workspaces)**: 可能的资源类型如 `mcp://coze-mcp-server/workspaces/<workspace_id>`。
+*   **机器人 (Bots)**: 可能的资源类型如 `mcp://coze-mcp-server/bots/<bot_id>`。
+
+服务器应清晰地在其文档（如 `[README.md](mdc:README.md)`）中说明其提供的资源类型及其 URI 结构。
+
+## 4. 设计原则
+
+*   **粒度 (Granularity)**: 合理设计资源的粒度。过于粗粒度的资源可能包含过多不相关信息，而过于细粒度的资源可能导致过多的请求和管理复杂性。
+*   **原子性 (Atomicity)**: 资源的更新应尽可能原子化，以避免不一致的状态。
+*   **幂等性 (Idempotency)**: 资源操作（如创建、更新）应设计为幂等的，多次执行同一操作应产生相同的结果。
+*   **版本控制 (Versioning)**: 对于重要的或经常变化的资源，考虑支持版本控制。
+
+## 5. 实现说明
+
+*   使用 MCP SDK (如 [modelcontextprotocol/python-sdk](mdc:https:/github.com/modelcontextprotocol/python-sdk)) 提供的工具和类型来定义和处理资源。
+*   资源内容应针对 LLM 进行优化，使其易于解析和利用。
+*   确保资源 URI 的稳定性和唯一性。
+*   关于如何在项目中组织资源实现代码，可以参考 [项目结构指南](mdc:rules/project-structure.mdc) 中关于 `resources/` 子包的建议。
+
+通过良好设计的资源，MCP 服务器可以有效地向 LLM 提供上下文信息，增强其执行任务的能力。

@@ -1,0 +1,62 @@
+name: 代码质量检查
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    name: 代码风格和类型检查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[dev]"
+          pip install black ruff mypy
+      
+      - name: 运行代码格式检查 (Black)
+        run: black --check src tests
+      
+      - name: 运行代码静态分析 (Ruff)
+        run: ruff src tests
+      
+      - name: 运行类型检查 (MyPy)
+        run: mypy src
+
+  test:
+    name: 单元测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[dev,mcp]"
+          pip install pytest pytest-cov
+      
+      - name: 运行单元测试
+        run: pytest --cov=src/mcp_xhs_publisher tests/
+      
+      - name: 上传测试覆盖率报告
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false 

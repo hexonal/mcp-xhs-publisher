@@ -1,20 +1,79 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "mcp-xhs-publisher"
 version = "0.1.0"
-description = "小红书自动发布的 MCP 工具，支持文本、图文、视频笔记发布。"
+description = "小红书自动发布的 MCP 服务器，支持文本、图文、视频笔记发布。"
 authors = [
     { name = "hexonal", email = "w741069229@gmail.com" }
 ]
 requires-python = ">=3.11"
 readme = "README.md"
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "xhs>=0.2.0",
+    "requests>=2.31.0",
+    "pydantic>=1.10.0",
+    "typing-extensions>=4.5.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/user/mcp-xhs-publisher"
+"Bug Tracker" = "https://github.com/user/mcp-xhs-publisher/issues"
+"Documentation" = "https://github.com/user/mcp-xhs-publisher#readme"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[project.dependencies]
-xhs = ">=0.2.0"
-requests = ">=2.31.0"
-pydantic = ">=1.10.0"
-
 # 如需官方 mcp sdk，请补充如下依赖
-# mcp-sdk = ">=0.1.0" 
+# mcp-sdk = ">=0.1.0"
+
+# 依赖项已移到project.dependencies数组中
+
+[project.optional-dependencies]
+# MCP相关依赖，包括官方SDK
+mcp = ["mcp[cli]>=1.8.0"]
+dev = [
+    "black",
+    "ruff",
+    "pytest",
+    "mypy",
+    "pre-commit",
+    "types-requests",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+# 定义需要忽略的错误
+ignore = ["E501"]  # 忽略行长度过长警告
+select = ["E", "F", "I"]  # 选择错误(E)、代码风格(F)和导入排序(I)检查
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+# 针对第三方库的类型处理
+[[tool.mypy.overrides]]
+module = ["xhs.*"]
+ignore_missing_imports = true
+
+[project.scripts]
+mcp-xhs-publisher = "mcp_xhs_publisher.__main__:main" 

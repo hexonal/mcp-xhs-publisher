@@ -1,0 +1,45 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# MCP 核心架构指南 (MCP Core Architecture Guide)
+
+本指南概述了模型上下文协议 (Model Context Protocol, MCP) 的核心架构。理解这些基础原则对于构建任何与 MCP 兼容的应用程序（无论是客户端还是服务器）都至关重要。
+
+参考：
+*   [MCP Introduction](mdc:https:/modelcontextprotocol.io/introduction)
+*   [MCP Core Architecture Concepts](mdc:https:/modelcontextprotocol.io/docs/concepts/architecture)
+
+## 1. 核心概念：客户端-服务器模型
+
+MCP 采用标准的客户端-服务器架构，旨在促进 AI 模型与各种数据源和工具之间的标准化交互。
+
+*   **MCP 主机 (Hosts)**: 这些是希望通过 MCP 访问数据和功能的应用程序，例如 Claude Desktop、IDE 或其他 AI 工具。主机通常内嵌或管理一个或多个 MCP 客户端。
+*   **MCP 客户端 (Clients)**: 协议客户端，负责与 MCP 服务器建立和维护连接。它们代表主机向服务器发送请求并接收响应。
+    *   详细的客户端开发规范，请参见 [MCP 客户端指南](mdc:rules/mcp-client-guidelines.mdc)。
+*   **MCP 服务器 (Servers)**: 这些程序通过 MCP 协议暴露特定的能力（如数据、工具）。`coze-mcp-server` 就是一个 MCP 服务器的例子。
+    *   详细的服务器开发规范，请参见 [MCP 服务器指南](mdc:rules/mcp-server-guidelines.mdc)。
+
+## 2. MCP 的目标与优势
+
+*   **标准化集成**: MCP 的核心价值在于为 AI 模型集成数据和工具提供了一个统一的接口，类似于为 AI 应用提供的"USB-C"端口。
+*   **互操作性**: 允许不同的 LLM 服务和工具提供商之间实现互操作，方便用户切换和组合。
+*   **模块化**: 促进 AI 应用的模块化设计，使得数据源和工具可以作为独立的 MCP 服务器进行开发和部署。
+*   **安全性**: MCP 的设计考虑了在用户基础设施内安全访问数据的需求。
+
+## 3. 主要交互组件
+
+MCP 服务器主要通过以下方式向客户端暴露其能力：
+
+*   **[资源 (Resources)](mdc:rules/mcp-resources.mdc)**: 代表服务器可以提供给 LLM 使用的数据和内容。
+*   **[工具 (Tools)](mdc:rules/mcp-tools.mdc)**: 使 LLM 能够通过服务器执行操作和与外部系统交互。
+*   **[高级概念 (Advanced Concepts)](mdc:rules/mcp-advanced-concepts.mdc)**: 包括诸如 Prompts, Sampling, Roots, 和 Transports 等，它们为更复杂的交互提供了支持。
+
+## 4. 开始使用
+
+*   **对于服务器开发者**: 请参考 [MCP 服务器指南](mdc:rules/mcp-server-guidelines.mdc) 和相关的资源及工具指南。
+*   **对于客户端开发者**: 请参考 [MCP 客户端指南](mdc:rules/mcp-client-guidelines.mdc)。
+*   **通用项目设置**: 参考 [项目结构指南](mdc:rules/project-structure.mdc)、[Python 编码标准指南](mdc:rules/python-coding-standards.mdc) 和 [使用 uv 打包与依赖管理指南](mdc:rules/packaging-with-uv.mdc)。
+
+本架构指南旨在提供一个高层次的理解。具体的实现细节和最佳实践请查阅各个专门的指南文件。

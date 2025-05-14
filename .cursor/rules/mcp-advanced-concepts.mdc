@@ -1,0 +1,61 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# MCP 高级概念指南 (MCP Advanced Concepts Guide)
+
+本指南涵盖了 MCP (Model Context Protocol) 中的一些高级概念，包括 Prompts（提示）、Sampling（采样）、Roots（根）和 Transports（传输）。理解这些概念有助于构建更复杂和功能更丰富的 MCP 服务器和客户端应用。
+
+## 1. Prompts (提示)
+
+参考：[MCP Prompts Concepts](mdc:https:/modelcontextprotocol.io/docs/concepts/prompts)
+
+*   **定义**: Prompts 在 MCP 中允许服务器向 LLM 提供可重用的提示模板和工作流。这有助于标准化与 LLM 的交互，并简化复杂任务的构建。
+*   **用途**: 服务器可以暴露预定义的 prompt 模板，客户端（或 LLM）可以选择并填充这些模板以生成具体的请求。
+*   **组件**:
+    *   **模板 (Template)**: 包含占位符的文本，LLM 可以填充这些占位符。
+    *   **参数 (Parameters)**: 定义模板中占位符的输入。
+    *   **元数据 (Metadata)**: 描述提示的用途、预期输出等。
+*   **规则**:
+    *   当服务器提供需要复杂或结构化输入的 LLM 交互时，应考虑使用 Prompts。
+    *   Prompts 的设计应易于 LLM 理解和使用。
+    *   服务器应通过 `listPrompts` (如果 MCP 规范支持) 或类似机制暴露可用的 Prompts。
+
+## 2. Sampling (采样)
+
+参考：[MCP Sampling Concepts](mdc:https:/modelcontextprotocol.io/docs/concepts/sampling)
+
+*   **定义**: Sampling 允许 MCP 服务器向 LLM 请求文本补全 (completions)，并对生成过程施加一定的控制（例如，温度、最大 token 数等采样参数）。
+*   **用途**: 当服务器需要 LLM 生成文本（例如，根据上下文回答问题、总结信息或创作内容）时，可以使用 Sampling 功能。
+*   **机制**: 服务器可以向其连接的客户端（通常是 LLM 服务代理）发送补全请求，并指定采样参数。
+*   **规则**:
+    *   服务器应仅在确实需要 LLM 生成能力时才请求采样。
+    *   采样参数的选择应根据具体任务的需求进行调整。
+    *   对于 `coze-mcp-server`，虽然其主要作为工具和资源的提供者，但在某些工具的实现中（如 `chat_with_bot`），可能间接涉及到代表用户向 Coze 后端（包含 LLM）发起类似"采样"的请求。
+
+## 3. Roots (根)
+
+参考：[MCP Roots Concepts](mdc:https:/modelcontextprotocol.io/docs/concepts/roots)
+
+*   **定义**: Roots 是 MCP 中用于组织和发现资源的顶层入口点。它们帮助客户端了解服务器提供了哪些主要的资源类别或功能区域。
+*   **用途**: 客户端可以通过查询服务器的 Roots 来开始浏览可用的资源和服务。
+*   **结构**: Roots 通常是一个层级结构，允许逻辑上对资源进行分组。
+*   **规则**:
+    *   服务器应定义有意义的 Roots，以便客户端能够有效地导航其提供的资源。例如，`coze-mcp-server` 可能有 `bots` 和 `workspaces` 等 Roots。
+    *   Roots 的设计应保持稳定，避免频繁更改导致客户端混淆。
+
+## 4. Transports (传输)
+
+参考：[MCP Transports Concepts](mdc:https:/modelcontextprotocol.io/docs/concepts/transports)
+
+*   **定义**: Transports 规定了 MCP 客户端和服务器之间如何交换消息。它定义了通信的底层机制。
+*   **标准**: MCP 通常基于标准传输协议（如 WebSockets, STOMP over WebSockets, 或简单的 HTTP）进行通信，消息内容采用 JSON 格式。
+*   **Python SDK**: 在使用 [modelcontextprotocol/python-sdk](mdc:https:/github.com/modelcontextprotocol/python-sdk) 时，开发者通常不需要直接处理底层的 Transport 细节，因为 SDK 会封装这些复杂性。
+*   **规则**:
+    *   服务器实现应确保其 Transport 层与 MCP 规范兼容。
+    *   对于 `coze-mcp-server`，其通过 `uvx coze-mcp-server` 或 `python -m coze_mcp_server` 启动，并监听传入的 MCP 连接，其 Transport 机制由其依赖的 MCP 库（可能是 Python SDK）处理。
+    *   配置（如端口、协议）应清晰并在 `[README.md](mdc:README.md)` 中说明，`coze-mcp-server` 的 README 提供了在 Claude.app 和 Zed 中的配置示例，这些配置间接指定了如何连接到服务器的 Transport。
+
+这些高级概念的实现和应用，通常涉及到 [MCP 服务器指南](mdc:rules/mcp-server-guidelines.mdc) 和 [MCP 客户端指南](mdc:rules/mcp-client-guidelines.mdc) 中描述的逻辑。
+理解并正确应用这些高级概念，可以帮助开发者构建更强大、更灵活的 MCP 集成。

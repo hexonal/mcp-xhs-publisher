@@ -1,0 +1,64 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# MCP 客户端指南 (MCP Client Guidelines)
+
+本指南为开发 MCP (Model Context Protocol) 客户端应用程序提供规范和最佳实践。MCP 客户端是与 MCP 服务器（如 `coze-mcp-server`）交互以利用其提供的资源和工具的程序。
+
+参考：
+*   [MCP 核心架构指南](mdc:rules/mcp-architecture-general.mdc)
+*   [MCP 资源指南](mdc:rules/mcp-resources.mdc) (了解服务器如何定义资源)
+*   [MCP 工具指南](mdc:rules/mcp-tools.mdc) (了解服务器如何定义工具)
+*   [MCP 高级概念指南](mdc:rules/mcp-advanced-concepts.mdc)
+*   [Model Context Protocol Python SDK](mdc:https:/github.com/modelcontextprotocol/python-sdk)
+
+## 1. 客户端角色与职责
+
+根据 [MCP 核心架构指南](mdc:rules/mcp-architecture-general.mdc)，MCP 客户端的核心职责包括：
+
+*   建立和维护与 MCP 服务器的安全连接。
+*   发现服务器提供的能力，主要是[资源](mdc:rules/mcp-resources.mdc)和[工具](mdc:rules/mcp-tools.mdc)。
+*   根据主机或 LLM 的指令，请求资源、执行工具或使用[提示](mdc:rules/mcp-advanced-concepts.mdc)。
+*   处理来自服务器的响应、更新和错误。
+*   将结果和信息传递回主机或 LLM。
+
+## 2. 连接与配置
+
+*   **服务器发现**: 客户端需要机制来发现和配置 MCP 服务器的连接信息。参考 `coze-mcp-server` 在 `[README.md](mdc:README.md)` 中的配置示例。
+*   **传输协议**: 客户端必须支持服务器所使用的 [MCP 传输协议](mdc:rules/mcp-advanced-concepts.mdc) (Transports)。
+*   **安全性**: 优先使用安全连接 (e.g., WSS)。
+
+## 3. 与服务器交互
+
+客户端通过 MCP 协议定义的方法与服务器交互以发现和使用其能力。
+
+### 3.1. 能力发现
+*   **列举资源 (`listResources`)**: 调用此方法发现服务器提供的可用资源。服务器端资源定义参见 [MCP 资源指南](mdc:rules/mcp-resources.mdc)。
+*   **列举工具 (`listTools`)**: 调用此方法获取服务器支持的工具列表及其定义。服务器端工具定义参见 [MCP 工具指南](mdc:rules/mcp-tools.mdc)。
+*   **列举提示 (`listPrompts`)**: (如果适用) 发现服务器提供的提示模板。相关概念参见 [MCP 高级概念指南](mdc:rules/mcp-advanced-concepts.mdc)。
+*   **查询根 (`getRoots`)**: (如果适用) 通过查询服务器的[根 (Roots)](mdc:rules/mcp-advanced-concepts.mdc) 来了解顶层资源类别。
+
+### 3.2. 使用能力
+*   **检索资源 (`retrieveResource`)**: 根据 URI 获取特定资源的内容和元数据。
+*   **订阅资源 (`subscribeToResource`)**: 对于动态资源，客户端应订阅更新并处理 `resourceChanged` 通知。
+*   **执行工具 (`executeTool`)**: 构造包含工具名称和正确参数的 `executeTool` 请求。
+*   **使用提示 (`executePrompt`)**: (如果适用) 选择提示模板，填充参数，并发送执行请求。
+
+### 3.3. 处理响应
+*   **成功响应**: 解析服务器返回的数据。
+*   **错误处理**: 优雅地处理来自服务器的错误响应。
+*   **异步通信**: MCP 交互通常是异步的，客户端需能处理并发请求和响应。
+
+## 4. 客户端开发最佳实践
+
+*   **使用 MCP SDK**: 强烈推荐使用官方 MCP SDK (如 [modelcontextprotocol/python-sdk](mdc:https:/github.com/modelcontextprotocol/python-sdk) for Python)。
+*   **状态管理**: 维护有关已连接服务器、可用资源和订阅的状态。
+*   **用户界面/体验 (UX)**: 清晰展示可用的能力和操作反馈。
+*   **日志记录**: 实现详细的日志记录，特别是在通信边界。
+*   **可重试性与超时**: 实现合理的重试逻辑和超时机制。
+*   **遵守服务器限制**: 注意并遵守服务器可能存在的速率限制或配额。
+*   客户端项目的整体结构和编码风格也应遵循通用的 [项目结构指南](mdc:rules/project-structure.mdc) 和 [Python 编码标准指南](mdc:rules/python-coding-standards.mdc)（如果适用）。
+
+通过遵循这些指南，可以构建出能够有效、可靠地与各种 MCP 服务器集成的客户端应用程序。

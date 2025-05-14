@@ -1,0 +1,79 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 项目结构指南 (Project Structure Guide)
+
+本文档旨在为基于 MCP (Model Context Protocol) 的 Python 项目提供标准的项目结构和文件组织规范。遵循这些规范有助于保持代码库的清晰、一致和易于维护，特别是对于构建 MCP 服务器的场景。
+
+## 核心目录与文件 (顶层结构)
+
+一个典型的 MCP 服务器项目应包含以下核心目录和文件：
+
+1.  **源代码 (`src/`)**:
+    *   所有项目的 Python 源代码都应放置在 `src/` 目录下，并以项目名称（通常是 PyPI 包名）命名子目录。例如，`src/my_mcp_server/`。
+    *   包的初始化文件 `__init__.py` 应位于 `src/my_mcp_server/__init__.py`。
+
+2.  **配置文件**:
+    *   `[pyproject.toml](mdc:pyproject.toml)`: 项目构建配置、依赖项及元数据。详细的配置和使用方法参见 [使用 uv 打包与依赖管理指南](mdc:rules/packaging-with-uv.mdc)。
+    *   `[uv.lock](mdc:uv.lock)` (或等效的锁定文件): 确保依赖版本一致性。其生成和管理参见 [使用 uv 打包与依赖管理指南](mdc:rules/packaging-with-uv.mdc)。
+    *   `[.pre-commit-config.yaml](mdc:.pre-commit-config.yaml)`: (推荐) pre-commit 钩子配置。
+    *   `[.python-version](mdc:.python-version)`: (推荐) 指定项目 Python 版本。
+
+3.  **文档与许可证**:
+    *   `[README.md](mdc:README.md)`: 项目入口文档。
+    *   `[LICENSE](mdc:LICENSE)`: 开源许可证文件。
+    *   `[CONTRIBUTING.md](mdc:CONTRIBUTING.md)`: (推荐) 贡献指南。
+
+4.  **其他**:
+    *   `[Dockerfile](mdc:Dockerfile)`: (如果适用) Docker 镜像构建文件。
+    *   `[.gitignore](mdc:.gitignore)`: Git 忽略配置。
+
+## 模块化与包架构 (`src/<project_package_name>/` 内部)
+
+在项目源代码包（例如 `src/my_mcp_server/`）内部，应根据功能和 MCP 核心概念将代码组织到不同的子包或模块中，以实现高内聚、低耦合。以下是一个推荐的通用包架构模式，供 MCP 服务器开发者参考：
+
+*   **`__init__.py`**: 包的根初始化文件。可以用于暴露包的公共 API。
+*   **`server_runner.py`** (或 `main.py`, `app.py`, `__main__.py`):
+    *   职责：MCP 服务器的启动入口。负责实例化服务器、配置路由/消息处理器、注册所有 [MCP 资源](mdc:rules/mcp-resources.mdc) (由 `resources/` 子包实现其定义) 和 [MCP 工具](mdc:rules/mcp-tools.mdc) (由 `tools/` 子包实现其定义) 的提供者/执行器，并启动服务器监听。
+*   **`config.py`**:
+    *   职责：加载、管理和提供对服务器配置（如端口、外部服务凭证、功能开关等）的访问。
+*   **`models/`** (子包):
+    *   职责：存放数据结构定义，通常使用 Pydantic 或 dataclasses 实现。
+    *   `models/__init__.py`
+    *   `models/base_schemas.py`: (可选) 定义通用的基础数据模型或共享结构。
+    *   `models/resource_schemas.py`: 定义各种 MCP 资源内容的具体数据结构。
+    *   `models/tool_io_schemas.py`: 定义 MCP 工具的输入参数和输出结果的数据结构。
+    *   *(可根据领域进一步细化，例如 `models/domain_specific_schemas.py`)*
+*   **`resources/`** (子包):
+    *   职责：实现 [MCP 资源指南](mdc:rules/mcp-resources.mdc) 中定义的 MCP 资源逻辑。每个主要的资源类型或一组相关的资源可以有自己的模块。
+    *   `resources/__init__.py`
+    *   `resources/base_provider.py`: (可选) 如果多个资源提供者有共享逻辑，可以定义一个基类。
+    *   `resources/resource_type_A_provider.py`: 实现特定类型（例如 "documents" 或 "tasks"）资源的 `listResources`, `retrieveResource`, `subscribeToResource` 等逻辑。
+    *   `resources/another_resource_group_provider.py`: 实现另一组相关资源的逻辑。
+*   **`tools/`** (子包):
+    *   职责：实现 [MCP 工具指南](mdc:rules/mcp-tools.mdc) 中定义的 MCP 工具的执行逻辑。每个工具或一组功能相近的工具可以组织在一个模块中。
+    *   `tools/__init__.py`
+    *   `tools/base_executor.py`: (可选) 如果多个工具有共享的执行前/后逻辑，可以定义一个基类。
+    *   `tools/action_category_X_executor.py`: 实现某一类操作（例如 "file_operations" 或 "notification_services"）的工具逻辑。
+    *   `tools/data_processing_executor.py`: 实现数据处理相关工具的逻辑。
+*   **`services/`** (或 `adapters/` 或 `clients/`) (子包):
+    *   职责：封装与外部服务或数据源（如第三方 API、数据库、消息队列等）的交互逻辑。
+    *   `services/__init__.py`
+    *   `services/external_api_client.py`: 与某个特定第三方 HTTP API 通信的客户端。
+    *   `services/database_accessor.py`: 提供数据库的增删改查接口。
+*   **`exceptions.py`**:
+    *   职责：定义项目中使用的自定义异常类，方便统一错误处理。
+*   **`util/`** (或 `common/` 或 `helpers/`) (子包):
+    *   职责：存放项目中多处用到的通用辅助函数、类或常量。
+    *   `util/__init__.py`
+    *   `util/datetime_helpers.py`
+    *   `util/string_formatters.py`
+
+**说明**:
+*   每个子包（如 `models/`, `resources/`, `tools/`, `services/`, `util/`）都应包含一个 `__init__.py` 文件，使其成为一个 Python 包。
+*   上述结构和命名仅为示例和建议。开发者应根据项目的具体规模、复杂度以及团队偏好进行调整，核心目标是保持逻辑清晰、职责分明和易于维护。
+*   可以参考 `coze-mcp-server` 项目的实际结构，但应理解其具体选择背后的通用原则，并应用于自己的项目中。
+
+遵循这种模块化的包架构，有助于构建可扩展、可维护的 MCP 服务器。

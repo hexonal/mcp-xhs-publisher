@@ -1,0 +1,69 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Python 编码标准指南 (Python Coding Standards Guide)
+
+本指南基于 [Google Python Style Guide](mdc:https:/zh-google-styleguide.readthedocs.io/en/latest/google-python-styleguide/python_language_rules.html) 及广泛接受的 Python 最佳实践，为 Python 项目（尤其是 MCP 服务器实现）提供编码规范和建议。遵循这些标准有助于提高代码的可读性、可维护性和一致性。
+
+## 1. Python 语言规则
+
+### 1.1. Linting 与格式化
+*   **强烈推荐** 使用代码检查工具（如 Flake8 或 Ruff）和代码格式化工具（如 Black 或 autopep8）。
+*   通过如 `[.pre-commit-config.yaml](mdc:.pre-commit-config.yaml)` 文件配置 pre-commit 钩子，可以在提交前自动执行这些工具，这是一种很好的实践（例如 `coze-mcp-server` 项目就采用了这种方式）。
+*   所有代码都应严格遵循 PEP 8 (Style Guide for Python Code)。
+
+### 1.2. 导入 (Imports)
+*   导入应在文件顶部，仅在模块和常量注释之后，文档字符串之前。
+*   导入应按以下顺序分组，组间用空行隔开：
+    1.  标准库导入 (e.g., `import os`)
+    2.  第三方库导入 (e.g., `from fastapi import FastAPI`)
+    3.  本地应用程序/库特定导入 (e.g., `from . import models`)
+*   在每个组内，导入应按字母顺序排序。
+*   通常推荐使用绝对导入 (`from mypkg import foo`)。显式相对导入 (`from . import foo`) 可以在包内部模块间引用时使用。
+
+### 1.3. 命名规范 (Naming Conventions)
+*   `module_name`, `package_name`, `method_name`, `function_name`, `instance_var_name`, `function_parameter_name`, `local_var_name`: 使用 `lower_case_with_underscores`。
+*   `ClassName`, `ExceptionName`: 使用 `CapWords` (CamelCase)。
+*   `GLOBAL_CONSTANT_NAME`: 使用 `UPPER_CASE_WITH_UNDERSCORES`。
+*   内部接口（如受保护的实例属性或方法）应以单个下划线开头 (`_internal_interface`)。
+*   私有的实例属性（应避免外部访问）可以名称修饰（name mangling）通过双下划线开头 (`__private_var`)，但需谨慎使用。
+
+### 1.4. 注释 (Comments)
+*   **文档字符串 (Docstrings)**: 所有公共模块、函数、类和方法都必须有文档字符串，遵循 PEP 257。
+    *   第一行是简短的摘要，后跟一个空行，然后是更详细的解释（如果需要）。
+    *   对于函数和方法，推荐使用 Google 风格的文档字符串，清晰地记录参数 (Args)、返回值 (Returns) 和可能抛出的异常 (Raises)。
+*   **块注释和行内注释**: 用于解释复杂或不明显的代码段。注释应准确并与代码保持同步。
+*   关于注释的更详细规范，包括文档字符串的具体格式推荐、特殊注释标记（如 `TODO`, `FIXME`）的使用、以及针对特定场景的注释指南，请参阅 [Python 代码注释规范](mdc:.cursor/rules/python_comment_guidelines.mdc)。
+
+### 1.5. 类型提示 (Type Hints)
+*   **强烈推荐** 使用类型提示 (PEP 484, PEP 526 等)。类型提示可以显著提高代码的可读性、可靠性，并帮助静态分析工具捕获错误。
+*   所有新的函数和方法的参数及返回值都应包含类型提示。
+*   对于变量赋值，也推荐使用类型提示。
+*   许多现代 Python 项目和库（如 `coze-mcp-server` 和 MCP Python SDK）都广泛使用类型提示，这是值得学习的实践。
+
+### 1.6. 字符串 (Strings)
+*   进行字符串格式化时，优先使用 f-strings (formatted string literals, e.g., `f"Hello {name}"`)，因其简洁和高效。
+*   PEP 8 对字符串引号（单引号 `'` 或双引号 `"`）没有强制规定，但推荐在项目中保持一致。选择一种并坚持使用。如果项目使用诸如 Black 这样的自动格式化工具，它通常有默认的引号偏好（例如，Black 倾向于使用双引号，除非单引号可以避免转义）。
+
+### 1.7. main 函数
+*   对于可执行的脚本文件，其主要功能应封装在 `main()` 函数中。
+*   通过 `if __name__ == "__main__":` 条件来调用 `main()` 函数，确保在脚本被导入时不会执行主要逻辑。
+*   对于作为包（可以通过 `python -m <package_name>` 运行）一部分的可执行逻辑，通常入口点在包的 `__main__.py` 文件中。
+
+## 2. Python 风格规则 (部分摘录自 Google Style Guide 及 PEP 8)
+
+*   **行长度**: 每行代码通常不应超过 79 个字符 (PEP 8 建议)。对于使用自动格式化工具（如 Black，默认 88 字符）的项目，可以遵循其配置。
+*   **空行**: 合理使用空行（通常一到两行）来分隔逻辑代码块、函数和类，以提高可读性。
+*   **TODO 注释**: 使用 `TODO(username_or_ticket): Message` 格式来标记待办事项或需要改进的地方。
+*   **异常处理**: 具体地捕获你期望处理的异常 (`try...except SpecificException`)，而不是通用的 `except Exception` 或裸露的 `except:`。清晰地处理或重新抛出异常。
+*   **布尔值判断**: 不要用 `== True` 或 `== False` 来比较布尔值 (例如，使用 `if greeting:` 而不是 `if greeting == True:`）。
+
+## 3. 项目内部风格一致性 (Project-Internal Style Consistency)
+
+*   **首要原则：一致性**。在参与现有项目时，应优先遵循该项目已经建立的编码风格和模式，即使它与本指南中的某些建议略有不同。保持代码库风格的统一性比严格遵守外部指南更重要。
+*   对于新项目，本指南旨在提供一个基于广泛共识的良好起点。
+*   可以参考如 MCP Python SDK ([modelcontextprotocol/python-sdk](mdc:https:/github.com/modelcontextprotocol/python-sdk)) 等结构良好、风格一致的开源项目的编码实践，学习其代码组织和风格约定。
+
+这些规范旨在促进高质量、可维护的 Python 代码。在实践中，清晰性、简洁性和一致性是关键目标。

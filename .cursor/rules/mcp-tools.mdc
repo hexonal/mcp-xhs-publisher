@@ -1,0 +1,61 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# MCP 工具指南 (MCP Tools Guide)
+
+本指南阐述了在 MCP (Model Context Protocol) 服务器（例如 `coze-mcp-server` 作为一种可能的实现）中如何定义、实现和暴露工具。工具使 LLM 能够通过服务器执行操作和与外部系统交互。
+
+参考：
+*   [MCP Tools Concepts](mdc:https:/modelcontextprotocol.io/docs/concepts/tools)
+*   `coze-mcp-server` 的 `[README.md](mdc:README.md)` (可作为查看具体工具列表的示例)
+
+## 1. 工具定义
+
+*   **名称 (Name)**: 每个工具必须有一个唯一的名称，用于客户端引用。名称应清晰描述工具的功能，例如 `create_bot`。
+*   **描述 (Description)**: 提供工具功能的详细描述，LLM 会使用此描述来理解工具的用途和何时使用它。
+*   **参数 (Parameters)**: 定义工具执行所需的输入参数。每个参数应有：
+    *   名称 (Name)
+    *   类型 (Type): 如 string, number, boolean, array, object。
+    *   描述 (Description): 清晰说明参数的含义和用途。
+    *   是否必需 (Required): 指示参数是否为必需。
+*   **返回类型 (Return Type)**: (可选) 描述工具执行成功后返回的数据结构和类型。这有助于 LLM 理解工具的输出。
+
+## 2. 工具暴露与执行
+
+*   **列举工具 (`listTools`)**: 服务器必须实现 `listTools` 方法，允许客户端发现服务器提供的所有可用工具及其定义。
+*   **执行工具 (`executeTool`)**: 当客户端（通常代表 LLM）决定使用某个工具时，它会发送 `executeTool` 请求，包含工具名称和所需的参数。服务器负责执行该工具的逻辑并返回结果。
+
+## 3. `coze-mcp-server` 中的工具示例
+
+以下列出 `coze-mcp-server` (作为一个具体例子) 提供的一些工具，以帮助理解工具的多样性：
+
+*   `list_workspaces`: 获取工作空间列表。
+*   `list_bots`: 获取机器人列表。
+*   `create_bot`: 创建机器人。
+*   `get_me`: 获取当前用户信息。
+*   `retrieve_bot`: 检索机器人信息。
+*   `update_bot`: 更新机器人。
+*   `publish_bot`: 将机器人发布到 API 通道。
+*   `chat_with_bot`: 与机器人聊天。
+*   `chat_with_workflow`: 与工作流聊天。
+*   `list_voices`: 列出可用语音。
+
+这些工具的具体实现方式和在项目中的组织，应遵循通用的[项目结构指南](mdc:rules/project-structure.mdc)中关于模块化和包架构的建议，例如将工具逻辑组织在专门的 `tools/` 子包下。
+
+## 4. 设计原则
+
+*   **原子性与单一职责**: 工具应设计为执行单一、明确的操作。复杂的操作可以分解为多个更小的工具。
+*   **清晰的参数和描述**: 参数和工具描述对于 LLM 能否正确有效地使用工具至关重要。描述应具体、无歧义，并提供足够上下文。
+*   **错误处理**: 工具执行可能失败。服务器应能处理错误情况，并向客户端返回结构化的错误信息，帮助 LLM 理解失败原因。
+*   **幂等性**: 尽可能将工具设计为幂等的。例如，重复调用 `create_bot` 并使用相同的参数，如果机器人已存在，则应返回现有机器人的信息而不是创建重复项或报错（除非特定设计如此）。
+*   **安全性**: 对于执行敏感操作或与外部系统交互的工具，必须实施严格的安全措施和权限检查。
+
+## 5. 实现说明
+
+*   使用 MCP SDK (如 [modelcontextprotocol/python-sdk](mdc:https:/github.com/modelcontextprotocol/python-sdk)) 来简化工具的定义和消息处理。
+*   工具的业务逻辑应与 MCP 协议处理代码分离，以保持代码整洁和可维护性。
+*   详细记录每个工具的参数、行为和预期输出。
+
+通过精心设计的工具，MCP 服务器可以极大地扩展 LLM 的能力，使其能够执行更广泛的任务并与真实世界系统交互。
