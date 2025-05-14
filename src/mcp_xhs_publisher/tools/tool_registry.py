@@ -4,6 +4,7 @@ MCP工具注册模块
 负责注册所有小红书发布相关的MCP工具和资源
 """
 from typing import Any, List, Optional, Dict, TYPE_CHECKING
+import traceback
 
 # 条件导入以避免循环引用
 if TYPE_CHECKING:
@@ -13,15 +14,13 @@ from ..models.tool_io_schemas import (
     PublishTextInput,
     PublishImageInput,
     PublishVideoInput,
-    PublishResponse,
-    LoginInput,
-    CheckLoginStatusInput,
-    LoginResponse,
-    PhoneLoginInput  # 添加手机登录输入模型导入
+    LoginResponse  # 添加手机登录输入模型导入
 )
 from .publish_executor import PublishExecutor
 from ..services.xhs_client import XhsApiClient
 from ..util.config_loader import get_use_sign_from_config
+# from .. import __main__  # 已废弃，避免循环导入
+from ..ready_flag import SERVER_READY
 
 # 导入XhsClient类，用于二维码登录
 try:
@@ -63,26 +62,26 @@ class ToolRegistry:
         
         @mcp_server.tool(
             name="generate_qrcode",
-            description="生成小红书账号登录二维码"
+            description="生成小红书账号登录二维码（不阻塞，需配合 check_qrcode_status 轮询）"
         )
         def generate_qrcode() -> Dict[str, Any]:
             """
-            生成小红书账号登录二维码
-            
+            生成小红书账号登录二维码（不阻塞）
             Returns:
-                Dict[str, Any]: 二维码信息，包含二维码URL和ID
+                Dict[str, Any]: 二维码信息，包含二维码URL、ID、Code
             """
+            # 检查全局ready标志
+            from .. import ready_flag
+            if not getattr(ready_flag, "SERVER_READY", True):
+                return {
+                    "status": "error",
+                    "message": "服务初始化中，请稍后重试",
+                    "error": "MCP服务器尚未初始化完成，无法处理请求。"
+                }
             try:
-                # 创建XhsApiClient实例
                 client = XhsApiClient()
-                
-                # 生成二维码
                 qrcode_info = client.client.get_qrcode()
-                
-                # 保存客户端以便后续使用
                 self.executor.client = client
-                
-                # 返回二维码信息
                 return {
                     "status": "success",
                     "message": "二维码生成成功，请使用小红书APP扫描",
@@ -91,84 +90,65 @@ class ToolRegistry:
                     "qr_code": qrcode_info["code"]
                 }
             except Exception as e:
-                # 生成二维码失败
+                import logging
                 error_msg = str(e)
+                error_type = type(e).__name__
+                tb = traceback.format_exc()
                 suggestions = []
-                
-                # 根据错误类型提供建议
                 if "sign" in error_msg.lower():
                     suggestions.append("尝试设置XHS_USE_SIGN=false禁用签名")
-                
-                if not get_use_sign_from_config():
-                    suggestions.append("您已禁用签名，请确保小红书API支持无签名访问")
-                
                 suggestion_text = "建议: " + "; ".join(suggestions) if suggestions else ""
-                
+                # 详细日志
+                logging.error(f"生成二维码失败: {error_type}: {error_msg}\nTraceback:\n{tb}")
                 return {
                     "status": "error",
                     "message": "生成二维码失败",
-                    "error": f"{error_msg}. {suggestion_text}"
+                    "error": f"{error_type}: {error_msg}. {suggestion_text}",
+                    "traceback": tb
                 }
-                
+
         @mcp_server.tool(
             name="check_qrcode_status",
-            description="检查二维码扫描状态"
+            description="检查二维码扫描状态（单次检查，需前端/调用方轮询）"
         )
         def check_qrcode_status(qr_id: str, qr_code: str) -> Dict[str, Any]:
             """
-            检查二维码扫描状态
-            
+            检查二维码扫描状态（单次检查）
             Args:
                 qr_id: 二维码ID
                 qr_code: 二维码Code
-                
             Returns:
                 Dict[str, Any]: 扫描状态，如果成功则包含用户信息
             """
             try:
-                # 从执行器获取客户端
                 client = self.executor.client
-                
-                # 检查二维码状态
                 check_result = client.client.check_qrcode(qr_id, qr_code)
-                
-                # 检查状态码
                 code_status = check_result.get("code_status", 0)
-                status_text = {
-                    0: "等待扫码", 
-                    1: "已扫码，等待确认", 
-                    2: "已确认登录", 
-                    3: "已取消", 
-                    4: "二维码已过期"
-                }.get(code_status, "未知状态")
-                
-                response = {
-                    "status": "pending" if code_status < 2 else "success" if code_status == 2 else "error",
-                    "message": status_text,
-                    "code_status": code_status
-                }
-                
-                # 如果登录成功
                 if code_status == 2 and check_result.get("cookie"):
-                    # 更新客户端cookie并获取用户信息
-                    client.client = XhsClient(cookie=check_result["cookie"], sign=client.client.sign)
-                    user_info = client.get_self_info()
-                    
-                    # 将客户端设置为执行器的客户端
-                    self.executor.client = client
-                    
-                    response["user_info"] = user_info
-                    response["login_success"] = True
-                
-                return response
+                    client.client = XhsClient(cookie=check_result["cookie"], sign=client.sign)
+                    setattr(client.client, "sign", client.sign)
+                    from ..util.cookie_manager import save_cookie
+                    save_cookie(client.cookie_path, check_result["cookie"])
+                    return {
+                        "status": "success",
+                        "message": "登录成功"
+                    }
+                elif code_status in (3, 4):
+                    return {
+                        "status": "error",
+                        "message": "登录失败或二维码已失效"
+                    }
+                else:
+                    return {
+                        "status": "pending",
+                        "message": "等待扫码或确认"
+                    }
             except Exception as e:
-                # 检查二维码状态失败
                 error_msg = str(e)
-                
                 return {
                     "status": "error",
                     "message": "检查二维码状态失败",
-                    "error": str(e)
+                    "error": error_msg
                 }
 
         @mcp_server.tool(
@@ -333,7 +313,7 @@ class ToolRegistry:
                 }
 
         @mcp_server.resource(
-            "xhs-user",
+            "xhs-user://",
             name="小红书用户资源",
             description="获取当前登录的小红书用户的详细信息，包含昵称、头像和粉丝数等数据"
         )

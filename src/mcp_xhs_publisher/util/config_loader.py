@@ -5,9 +5,8 @@
 """
 import os
 import sys
-import logging
-from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict
+
 
 # 规范化参数名
 def _normalize_param_name(name: str) -> str:
@@ -111,48 +110,20 @@ def load_xhs_config() -> Dict[str, str]:
         ValueError: 如果缺少必要的配置项
     """
     config = {}
-    
-    # 从环境变量加载配置
-    config["account"] = os.environ.get("XHS_ACCOUNT", "")
     config["cookie_dir"] = os.environ.get("XHS_COOKIE_DIR", "")
     config["sign_url"] = os.environ.get("XHS_SIGN_URL", "")
     config["use_sign"] = os.environ.get("XHS_USE_SIGN", "true")
-    
-    # 解析命令行参数覆盖配置
     for idx, val in enumerate(sys.argv):
-        if val == "--xhs-account" and idx + 1 < len(sys.argv):
-            config["account"] = sys.argv[idx + 1]
-        elif val == "--xhs-cookie-dir" and idx + 1 < len(sys.argv):
+        if val == "--xhs-cookie-dir" and idx + 1 < len(sys.argv):
             config["cookie_dir"] = sys.argv[idx + 1]
         elif val == "--sign-url" and idx + 1 < len(sys.argv):
             config["sign_url"] = sys.argv[idx + 1]
-        elif val == "--xhs-use-sign" and idx + 1 < len(sys.argv):
-            config["use_sign"] = sys.argv[idx + 1]
-        elif val.startswith("--xhs-account="):
-            config["account"] = val.split("--xhs-account=")[1]
         elif val.startswith("--xhs-cookie-dir="):
             config["cookie_dir"] = val.split("--xhs-cookie-dir=")[1]
         elif val.startswith("--sign-url="):
             config["sign_url"] = val.split("--sign-url=")[1]
-        elif val.startswith("--xhs-use-sign="):
-            config["use_sign"] = val.split("--xhs-use-sign=")[1]
-    
     # 验证必要的配置项
-    if not config["account"]:
-        raise ValueError("缺少小红书账号配置。请设置环境变量 XHS_ACCOUNT 或提供命令行参数 --xhs-account")
-    
     return config
-
-
-def get_account_from_config() -> str:
-    """
-    从配置中获取账号
-    
-    Returns:
-        str: 账号
-    """
-    config = load_xhs_config()
-    return config["account"]
 
 
 def get_log_level_from_config() -> str:

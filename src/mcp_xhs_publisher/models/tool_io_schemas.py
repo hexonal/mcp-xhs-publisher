@@ -7,14 +7,6 @@ from typing import List, Optional, Dict, Any
 
 from pydantic import BaseModel, Field
 
-
-class LoginInput(BaseModel):
-    """登录输入参数"""
-    account: str = Field(..., description="小红书账号标识")
-    cookie_dir: Optional[str] = Field(None, description="cookie存储目录")
-    sign_url: Optional[str] = Field(None, description="签名服务URL")
-
-
 class LoginResponse(BaseModel):
     """登录结果响应"""
     status: str = Field(..., description="状态：success 或 error")
@@ -22,18 +14,6 @@ class LoginResponse(BaseModel):
     user_info: Optional[Dict[str, Any]] = Field(None, description="用户信息")
     error: Optional[str] = Field(None, description="错误信息")
     data: Optional[Dict[str, Any]] = Field(None, description="其他数据")
-
-
-class PhoneLoginInput(BaseModel):
-    """手机登录输入参数"""
-    phone: str = Field(..., description="手机号码")
-    code: Optional[str] = Field(None, description="短信验证码")
-    area_code: str = Field("+86", description="国家/地区代码")
-
-
-class CheckLoginStatusInput(BaseModel):
-    """检查登录状态输入参数"""
-    account: str = Field(..., description="小红书账号标识")
 
 
 class PublishTextInput(BaseModel):
@@ -60,6 +40,9 @@ class PublishVideoInput(BaseModel):
 class PublishResponse(BaseModel):
     """发布结果响应模型"""
     status: str = Field(..., description="状态：success 或 error")
-    type: str = Field(..., description="笔记类型：text, image 或 video")
-    result: Optional[Dict[str, Any]] = Field(None, description="发布结果数据")
+    message: str = Field(..., description="发布结果说明")
+    note_id: Optional[str] = Field(None, description="发布成功的笔记ID")
+    note_type: Optional[str] = Field(None, description="笔记类型：text, image 或 video")
+    publish_time: Optional[str] = Field(None, description="发布时间")
+    image_count: Optional[int] = Field(None, description="图片数量，仅图文笔记返回")
     error: Optional[str] = Field(None, description="错误信息") 

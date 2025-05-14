@@ -58,9 +58,6 @@ mcp-xhs-publisher
 
 # 指定日志级别启动
 python -m mcp_xhs_publisher --log-level=DEBUG
-
-# 指定账号
-python -m mcp_xhs_publisher --account=13812345678
 ```
 
 ### 环境变量配置
@@ -70,7 +67,6 @@ python -m mcp_xhs_publisher --account=13812345678
 ```bash
 # 设置环境变量
 export MCP_LOG_LEVEL=INFO              # 日志级别: DEBUG, INFO, WARNING, ERROR, CRITICAL
-export XHS_ACCOUNT=13812345678         # 小红书账号手机号（不要有空格或其他字符）
 export XHS_COOKIE_DIR=~/.xhs_cookies   # Cookie存储目录
 export XHS_SIGN_URL=https://example.com/sign  # 签名服务URL
 
@@ -84,13 +80,12 @@ python -m mcp_xhs_publisher
 
 ```bash
 # 使用命令行参数
-python -m mcp_xhs_publisher --log-level=DEBUG --account=13812345678
+python -m mcp_xhs_publisher --log-level=DEBUG
 ```
 
 支持的命令行参数：
 
 - `--log-level`: 日志级别
-- `--account`: 小红书账号手机号
 - `--cookie-dir`: Cookie存储目录
 - `--sign-url`: 签名服务URL
 
@@ -108,13 +103,14 @@ from mcp_xhs_publisher.util.config_loader import load_xhs_config
 
 # 加载完整配置
 config = load_xhs_config()
-account = config["account"]
 cookie_dir = config.get("cookie_dir")
 sign_url = config.get("sign_url")
+log_level = config.get("log_level")
 
 # 或使用辅助函数获取特定配置
-from mcp_xhs_publisher.util.config_loader import get_account_from_config, get_log_level_from_config
-account = get_account_from_config()
+from mcp_xhs_publisher.util.config_loader import get_cookie_dir_from_config, get_sign_url_from_config, get_log_level_from_config
+cookie_dir = get_cookie_dir_from_config()
+sign_url = get_sign_url_from_config()
 log_level = get_log_level_from_config()  # 返回 logging.INFO 等数值
 ```
 
@@ -122,7 +118,6 @@ log_level = get_log_level_from_config()  # 返回 logging.INFO 等数值
 
 | 配置项 | 环境变量 | 命令行参数 (均可使用) |
 |-------|----------|----------------------|
-| 账号 | XHS_ACCOUNT | --account, --xhs-account, --xhs_account |
 | Cookie目录 | XHS_COOKIE_DIR | --cookie-dir, --cookie_dir, --cookies, --cookie_path |
 | 签名服务URL | XHS_SIGN_URL | --sign-url, --sign_url, --signurl |
 | 日志级别 | MCP_LOG_LEVEL | --log-level, --log_level, --loglevel |
@@ -131,14 +126,14 @@ log_level = get_log_level_from_config()  # 返回 logging.INFO 等数值
 
 ```bash
 # 环境变量方式
-export XHS_ACCOUNT="13812345678"
+export XHS_COOKIE_DIR="~/.xhs_cookies"
 export MCP_LOG_LEVEL="DEBUG"
 
 # 命令行方式1
-python -m mcp_xhs_publisher --account 13812345678 --log-level DEBUG
+python -m mcp_xhs_publisher --cookie-dir ~/.xhs_cookies --log-level DEBUG
 
 # 命令行方式2
-python -m mcp_xhs_publisher --xhs_account 13812345678 --loglevel DEBUG
+python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
 ```
 
 开发者可直接使用这些工具函数在自己的模块中加载配置，而不需要重复实现配置解析逻辑。
@@ -257,7 +252,6 @@ python -m mcp_xhs_publisher --xhs_account 13812345678 --loglevel DEBUG
       "args": ["mcp-xhs-publisher"],
       "env": {
         "MCP_LOG_LEVEL": "INFO",
-        "XHS_ACCOUNT": "13812345678",
         "XHS_COOKIE_DIR": "~/.xhs_cookies",
         "XHS_SIGN_URL": "https://example.com/sign"
       }
@@ -283,7 +277,6 @@ python -m mcp_xhs_publisher --xhs_account 13812345678 --loglevel DEBUG
       "args": ["mcp-xhs-publisher"],
       "env": {
         "MCP_LOG_LEVEL": "INFO",
-        "XHS_ACCOUNT": "13812345678",
         "XHS_COOKIE_DIR": "~/.xhs_cookies",
         "XHS_SIGN_URL": "https://example.com/sign"
       }
@@ -307,7 +300,6 @@ python -m mcp_xhs_publisher --xhs_account 13812345678 --loglevel DEBUG
       "args": ["mcp-xhs-publisher"],
       "env": {
         "MCP_LOG_LEVEL": "INFO",
-        "XHS_ACCOUNT": "13812345678",
         "XHS_COOKIE_DIR": "~/.xhs_cookies",
         "XHS_SIGN_URL": "https://example.com/sign"
       }
@@ -331,7 +323,6 @@ python -m mcp_xhs_publisher --xhs_account 13812345678 --loglevel DEBUG
         "args": ["mcp-xhs-publisher"],
         "env": {
           "MCP_LOG_LEVEL": "INFO",
-          "XHS_ACCOUNT": "13812345678",
           "XHS_COOKIE_DIR": "~/.xhs_cookies",
           "XHS_SIGN_URL": "https://example.com/sign"
         }

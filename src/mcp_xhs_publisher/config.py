@@ -4,12 +4,12 @@
 管理MCP服务器配置，支持从环境变量、命令行参数和配置文件加载配置
 符合MCP服务器指南中关于配置管理的建议
 """
-import os
-import sys
 import json
 import logging
+import os
+import sys
 from pathlib import Path
-from typing import Dict, Any, Optional, Union, List, cast
+from typing import Dict, Any, Optional
 
 
 class Config:
@@ -31,7 +31,7 @@ class Config:
     SENSITIVE_KEYS = [
         "xhs_sign_url",
         "cookie",
-        "xhs_account"  # 添加手机号作为敏感信息
+        "xhs_account"  # 账号作为敏感信息
     ]
     
     def __init__(self, config_file: Optional[str] = None):
@@ -88,7 +88,6 @@ class Config:
         # MCP服务器配置
         env_mapping = {
             "MCP_LOG_LEVEL": "log_level",
-            "XHS_ACCOUNT": "xhs_account",
             "XHS_COOKIE_DIR": "xhs_cookie_dir",
             "XHS_SIGN_URL": "xhs_sign_url"
         }
@@ -139,7 +138,6 @@ class Config:
         """
         key_map = {
             "log-level": "log_level",
-            "account": "xhs_account",
             "cookie-dir": "xhs_cookie_dir",
             "sign-url": "xhs_sign_url"
         }

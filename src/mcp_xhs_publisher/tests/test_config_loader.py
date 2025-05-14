@@ -6,9 +6,9 @@
 import os
 import sys
 import unittest
-from unittest.mock import patch
 
-from ..util.config_loader import load_xhs_config, _normalize_param_name, get_log_level_from_config
+from ..util.config_loader import load_xhs_config, _normalize_param_name, \
+    get_log_level_from_config
 
 
 class TestConfigLoader(unittest.TestCase):

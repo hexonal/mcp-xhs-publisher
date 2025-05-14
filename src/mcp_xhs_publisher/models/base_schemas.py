@@ -3,7 +3,8 @@
 
 包含项目中常用的基础数据模型和共享结构
 """
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, Any
+
 from pydantic import BaseModel, Field
 
 

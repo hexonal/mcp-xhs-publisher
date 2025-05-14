@@ -1,5 +1,7 @@
-mcp
+mcp[cli]
 xhs>=0.2.0
 requests>=2.31.0
 pydantic>=1.10.0
 qrcode
+requests
+playwright

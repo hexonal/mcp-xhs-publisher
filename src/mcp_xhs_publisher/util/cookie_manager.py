@@ -53,17 +53,11 @@ def cookie_valid(cookie: str, required_keys: List[str]) -> bool:
     return True
 
 
-def get_cookie_dir(account: str = "default") -> str:
+def get_cookie_dir() -> str:
     """
-    获取cookie存储目录
-    
-    Args:
-        account: 账号标识
-        
+    获取 cookie 存储目录
     Returns:
-        cookie存储目录路径
+        str: cookie 目录路径
     """
-    cookie_dir = os.path.expanduser("~/.xhs_cookies")
-    if not os.path.exists(cookie_dir):
-        os.makedirs(cookie_dir)
-    return cookie_dir 
+    # 直接返回默认路径
+    return os.path.expanduser("~/.xhs_cookies") 

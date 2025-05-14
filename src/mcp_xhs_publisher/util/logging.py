@@ -19,9 +19,18 @@ class JsonFormatter(logging.Formatter):
         log_data: Dict[str, Any] = {
             "timestamp": time.time(),
             "level": record.levelname,
-            "message": record.getMessage(),
             "logger": record.name,
         }
+        # 尝试将 message 反序列化为 dict，避免重复转义
+        msg = record.getMessage()
+        try:
+            msg_obj = json.loads(msg)
+            if isinstance(msg_obj, dict):
+                log_data.update(msg_obj)
+            else:
+                log_data["message"] = msg
+        except Exception:
+            log_data["message"] = msg
         
         # 添加异常信息（如果有）
         if record.exc_info:
