@@ -39,7 +39,7 @@ class XhsApiClient:
         self.cookie_dir = os.path.expanduser(cookie_dir or os.path.expanduser("~/.xhs_cookies"))
         self.cookie_path = os.path.join(self.cookie_dir, "default.cookie")
         self.sign_url = sign_url
-        self.use_sign = use_sign
+        self.use_sign = True  # 强制全局 use_sign 为 True
         self.client = None
 
         if not os.path.exists(self.cookie_dir):
@@ -103,7 +103,8 @@ class XhsApiClient:
                 sign_url = val.split("--sign-url=")[1]
         if not sign_url:
             sign_url = os.environ.get("XHS_SIGN_URL") or config.get("sign_url", "")
-        use_sign = config.get("use_sign", "true").lower() != "false"
+        # 强制 use_sign 为 True
+        use_sign = True
         return XhsApiClient(
             cookie_dir=config.get("cookie_dir"),
             sign_url=sign_url,
@@ -119,45 +120,29 @@ class XhsApiClient:
             return False
 
     def _login_by_qrcode(self):
-        """通过二维码登录"""
+        """通过二维码登录（仅生成二维码，不阻塞轮询）"""
         # 创建签名函数（仅当use_sign为True且sign_url不为空时）
         sign_function = None
         if self.use_sign and self.sign_url:
             sign_function = self._sign
-        
         try:
             self.client = XhsClient(sign=sign_function)
             qrcode = self.client.get_qrcode()
             print(f"请扫码登录，二维码链接：{qrcode['url']}")
-            
             # 检查返回的qrcode是否有效
             if not qrcode.get('url'):
                 error_msg = f"获取二维码失败: {qrcode}"
                 print(error_msg)
                 raise Exception(error_msg)
-                
-            for _ in range(60):
-                try:
-                    status = self.client.check_qrcode(qrcode['id'], qrcode['code'])
-                    if status.get("cookie") and cookie_valid(status["cookie"], self.REQUIRED_COOKIE_KEYS):
-                        save_cookie(self.cookie_path, status["cookie"])
-                        self.client = XhsClient(cookie=status["cookie"], sign=sign_function)
-                        if self._is_logged_in():
-                            print("登录成功！")
-                            return
-                except Exception as e:
-                    print(f"检查二维码状态出错: {e}")
-                time.sleep(2)
-            raise Exception("二维码登录超时")
+            # 只生成二维码并返回，不做轮询和阻塞
+            return qrcode
         except Exception as e:
             error_details = str(e)
             print(f"登录过程出错: {error_details}")
-            
             if 'sign' in error_details.lower() or 'x-sign' in error_details.lower():
                 suggestion = "可能是签名服务问题，请尝试设置 XHS_USE_SIGN=false 禁用签名"
                 print(suggestion)
                 error_details += f"。{suggestion}"
-                
             raise Exception(f"二维码登录失败: {error_details}")
 
     def _download_images(self, image_paths: List[str]) -> (List[str], List[str]):

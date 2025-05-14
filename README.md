@@ -159,6 +159,8 @@ python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
 | `publish_text` | 发布纯文本笔记 | `content`, `topics?`, `account?` |
 | `publish_image` | 发布图文笔记 | `content`, `image_paths`, `topics?`, `account?` |
 | `publish_video` | 发布视频笔记 | `content`, `video_path`, `cover_path?`, `topics?`, `account?` |
+| `generate_qrcode` | 生成小红书账号登录二维码（非阻塞） | 无 |
+| `check_qrcode_status` | 检查二维码扫描状态（需前端轮询） | `qr_id`, `qr_code` |
 
 #### 资源 (Resources)
 
@@ -168,6 +170,41 @@ python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
 | `xhs-user://{account}` | 获取用户信息 | `account?` |
 
 ### 工具参数与返回值
+
+#### 0. 二维码登录相关
+
+**二维码生成（generate_qrcode）**
+- 非阻塞，调用后立即返回二维码信息（url、id、code），不会阻塞或轮询。
+- 由前端/调用方负责定时调用 `check_qrcode_status` 轮询二维码状态。
+
+**二维码状态检查（check_qrcode_status）**
+- 单次检查二维码扫码/登录状态，需传入 `qr_id` 和 `qr_code`。
+- 前端/调用方应定时轮询，直到登录成功或二维码失效。
+
+**返回示例**：
+```json
+{
+    "status": "success",
+    "message": "二维码生成成功，请使用小红书APP扫描",
+    "qr_url": "https://...",
+    "qr_id": "...",
+    "qr_code": "..."
+}
+```
+
+```json
+{
+    "status": "pending",
+    "message": "等待扫码或确认"
+}
+```
+
+```json
+{
+    "status": "success",
+    "message": "登录成功"
+}
+```
 
 #### 1. 发布纯文本笔记
 

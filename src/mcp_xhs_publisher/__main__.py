@@ -93,7 +93,7 @@ def start_server() -> None:
         # 日志会输出到文件而不是stderr，避免干扰MCP通信
         log_error("MCP服务器实现未找到", 
                   error="ImportError",
-                  suggestion="请安装mcp[cli]或使用: pip install 'mcp-xhs-publisher[mcp]'")
+                  suggestion="请安装mcp[cli]或使用: pip install 'mcp-xhs-publisher[mcXp]'")
         sys.exit(1)
     except KeyboardInterrupt:
         if not sys.stdout.isatty():
