@@ -48,6 +48,9 @@ class XhsApiClient:
         sign_function = None
         if self.use_sign and self.sign_url:
             sign_function = self._sign
+        else:
+            # 提供一个空实现，避免 external_sign 为 None
+            sign_function = lambda *args, **kwargs: {}
 
         cookie = load_cookie(self.cookie_path)
         if cookie and cookie_valid(cookie, self.REQUIRED_COOKIE_KEYS):
