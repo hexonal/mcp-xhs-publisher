@@ -9,10 +9,10 @@ from xhs import XhsClient
 
 def sign(uri, data=None, a1="", web_session=""):
     # 填写自己的 flask 签名服务端口地址
-    res = requests.post("http://154.89.148.31:5005/sign",
+    res = requests.post("http://localhost:5005/sign",
                         json={"uri": uri, "data": data, "a1": a1, "web_session": web_session})
-    print(res)
     signs = res.json()
+    print(signs)
     return {
         "x-s": signs["x-s"],
         "x-t": signs["x-t"]
@@ -23,6 +23,7 @@ if __name__ == '__main__':
     xhs_client = XhsClient(sign=sign,timeout=30)
     print(datetime.datetime.now())
     qr_res = xhs_client.get_qrcode()
+    print(qr_res)
     qr_id = qr_res["qr_id"]
     qr_code = qr_res["code"]
 

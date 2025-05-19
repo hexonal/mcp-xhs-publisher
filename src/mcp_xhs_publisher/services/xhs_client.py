@@ -28,90 +28,40 @@ class XhsApiClient:
     """
     REQUIRED_COOKIE_KEYS = ["a1", "web_session", "webId"]
 
-    def __init__(self, cookie_dir: Optional[str] = None, sign_url: Optional[str] = None, use_sign: bool = True):
+    def __init__(self, cookie_dir: str, cookie_name: str):
         """
         初始化小红书客户端。
         Args:
-            cookie_dir: cookie 存储目录，默认 ~/.xhs_cookies
-            sign_url: 签名服务 URL（可选）
-            use_sign: 是否使用签名服务，默认为True
+            cookie_dir: cookie 存储目录，必须显式指定
+            cookie_name: cookie 文件名，必须显式指定
         """
-        self.cookie_dir = os.path.expanduser(cookie_dir or os.path.expanduser("~/.xhs_cookies"))
-        self.cookie_path = os.path.join(self.cookie_dir, "default.cookie")
-        self.sign_url = sign_url
-        self.use_sign = True  # 强制全局 use_sign 为 True
+        self.cookie_dir = os.path.expanduser(cookie_dir)
+        self.cookie_path = os.path.join(self.cookie_dir, cookie_name)
         self.client = None
 
         if not os.path.exists(self.cookie_dir):
             os.makedirs(self.cookie_dir)
 
-        sign_function = None
-        if self.use_sign and self.sign_url:
-            sign_function = self._sign
-        else:
-            # 提供一个空实现，避免 external_sign 为 None
-            sign_function = lambda *args, **kwargs: {}
-
         cookie = load_cookie(self.cookie_path)
         if cookie and cookie_valid(cookie, self.REQUIRED_COOKIE_KEYS):
-            self.client = XhsClient(cookie=cookie, sign=sign_function)
+            self.client = XhsClient(cookie=cookie)
         else:
-            self.client = XhsClient(sign=sign_function)
-
-        if hasattr(self.client, "sign"):
-            self.client.sign = self._sign
-
-    def _sign(self, uri, data=None, a1="", web_session="", **kwargs):
-        """
-        签名服务调用，兼容 login_phone.py 示例，使用 self.sign_url
-        """
-        # 优先从 cookie 中提取 a1 和 web_session
-        cookie = kwargs.get("cookie", "")
-        if cookie:
-            for item in cookie.split(";"):
-                item = item.strip()
-                if item.startswith("a1="):
-                    a1 = item[3:]
-                elif item.startswith("web_session="):
-                    web_session = item[12:]
-        try:
-            res = requests.post(self.sign_url,
-                               json={"uri": uri, "data": data, "a1": a1, "web_session": web_session},
-                               timeout=10)
-            signs = res.json()
-            return {
-                "x-s": signs["x-s"],
-                "x-t": signs["x-t"]
-            }
-        except Exception as e:
-            print(f"签名服务调用失败: {e}")
-            return {}
+            raise RuntimeError("未获取到有效的小红书 cookie，请先登录或配置 cookie 后重试。")
 
     @staticmethod
     def build_from_env() -> "XhsApiClient":
         """
         从环境变量和命令行参数构建客户端。
-        优先级：命令行参数 > 环境变量
+        必须显式指定 cookie_dir 和 cookie_name。
         Returns:
             XhsApiClient 实例
         Raises:
             ValueError: 如果未找到必要的账号信息
         """
         config = load_xhs_config()
-        sign_url = None
-        for idx, val in enumerate(sys.argv):
-            if val == "--sign-url" and idx + 1 < len(sys.argv):
-                sign_url = sys.argv[idx + 1]
-            elif val.startswith("--sign-url="):
-                sign_url = val.split("--sign-url=")[1]
-        if not sign_url:
-            sign_url = os.environ.get("XHS_SIGN_URL") or config.get("sign_url", "")
-        # 强制 use_sign 为 True
-        use_sign = True
         return XhsApiClient(
-            cookie_dir=config.get("cookie_dir"),
-            sign_url=sign_url,
-            use_sign=use_sign
+            cookie_dir=config.cookie_dir,
+            cookie_name=config.cookie_name
         )
 
     def _is_logged_in(self) -> bool:
@@ -121,33 +71,6 @@ class XhsApiClient:
             return bool(info and info.get("nickname"))
         except Exception:
             return False
-
-    def _login_by_qrcode(self):
-        """通过二维码登录（仅生成二维码，不阻塞轮询）"""
-        # 创建签名函数（仅当use_sign为True且sign_url不为空时）
-        sign_function = None
-        if self.use_sign and self.sign_url:
-            sign_function = self._sign
-        try:
-            self.client = XhsClient(sign=sign_function)
-            qrcode = self.client.get_qrcode()
-            print(f"请扫码登录，二维码链接：{qrcode['url']}")
-            # 检查返回的qrcode是否有效
-            if not qrcode.get('url'):
-                error_msg = f"获取二维码失败: {qrcode}"
-                print(error_msg)
-                raise Exception(error_msg)
-            # 只生成二维码并返回，不做轮询和阻塞
-            return qrcode
-        except Exception as e:
-            error_details = str(e)
-            print(f"登录过程出错: {error_details}")
-            if 'sign' in error_details.lower() or 'x-sign' in error_details.lower():
-                suggestion = "可能是签名服务问题，请尝试设置 XHS_USE_SIGN=false 禁用签名"
-                print(suggestion)
-                error_details += f"。{suggestion}"
-            raise Exception(f"二维码登录失败: {error_details}")
-
     def _download_images(self, image_paths: List[str]) -> (List[str], List[str]):
         """
         下载 https 图片到临时目录，返回本地路径列表和临时文件列表。
@@ -225,9 +148,4 @@ class XhsApiClient:
             )
             return {"status": "success", "type": "video", "result": result}
         except Exception as e:
-            return {"status": "error", "type": "video", "error": str(e)}
-
-    @property
-    def sign(self):
-        """公开的签名方法访问接口"""
-        return self._sign 
+            return {"status": "error", "type": "video", "error": str(e)} 

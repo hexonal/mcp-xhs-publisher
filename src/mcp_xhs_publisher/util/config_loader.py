@@ -3,128 +3,46 @@
 
 负责从环境变量和命令行参数加载小红书配置
 """
+from dataclasses import dataclass
+import argparse
 import os
 import sys
 from typing import Dict
 
+@dataclass
+class XhsConfig:
+    cookie_dir: str
+    cookie_name: str
+    log_level: str = "INFO"
+    sign_url: str = ""
+    use_sign: bool = True
 
-# 规范化参数名
-def _normalize_param_name(name: str) -> str:
-    """
-    规范化参数名，将横线转换为下划线
-    
-    Args:
-        name: 参数名
-        
-    Returns:
-        规范化后的参数名
-    """
-    return name.replace("-", "_").lower()
+def load_xhs_config() -> XhsConfig:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--cookie-dir', type=str, required=False, help='cookie 存储目录')
+    parser.add_argument('--cookie-name', type=str, required=False, help='cookie 文件名')
+    parser.add_argument('--log-level', type=str, required=False, help='日志级别')
+    parser.add_argument('--sign-url', type=str, required=False, help='签名服务URL')
+    parser.add_argument('--use-sign', type=str, required=False, help='是否使用签名服务（true/false）')
+    args, _ = parser.parse_known_args()
 
-# 展开路径中的~符号
-def _expand_path(path: str) -> str:
-    """
-    展开路径中的~符号为用户主目录
-    
-    Args:
-        path: 包含~的路径
-        
-    Returns:
-        展开后的绝对路径
-    """
-    return os.path.expanduser(path) if "~" in path else path
+    cookie_dir = args.cookie_dir or os.environ.get("XHS_COOKIE_DIR")
+    cookie_name = args.cookie_name or os.environ.get("XHS_COOKIE_NAME")
+    log_level = args.log_level or os.environ.get("XHS_LOG_LEVEL") or "INFO"
+    sign_url = args.sign_url or os.environ.get("XHS_SIGN_URL") or ""
+    use_sign_str = args.use_sign or os.environ.get("XHS_USE_SIGN") or "true"
+    use_sign = use_sign_str.lower() != "false"
 
+    if not cookie_dir or not cookie_name:
+        raise ValueError("必须通过 --cookie-dir/--cookie-name 或 XHS_COOKIE_DIR/XHS_COOKIE_NAME 指定 cookie 路径和文件名。")
 
-def _get_env_variables() -> Dict[str, str]:
-    """
-    从环境变量中获取所有XHS_前缀和MCP_前缀的配置
-    
-    Returns:
-        Dict[str, str]: 配置字典
-    """
-    env_config = {}
-    
-    # 查找所有XHS_前缀的环境变量
-    for key, value in os.environ.items():
-        if key.startswith("XHS_"):
-            # 去除前缀并转换为小写
-            config_key = _normalize_param_name(key[4:].lower())
-            env_config[config_key] = value
-        elif key.startswith("MCP_"):
-            # 处理MCP前缀的环境变量
-            config_key = _normalize_param_name(key[4:].lower())
-            env_config[config_key] = value
-            
-    return env_config
-
-
-def _get_argv_config() -> Dict[str, str]:
-    """
-    从命令行参数获取配置
-    
-    支持的格式:
-    --key=value
-    --key value
-    
-    Returns:
-        Dict[str, str]: 配置字典
-    """
-    argv_config = {}
-    args = sys.argv[1:]
-    
-    i = 0
-    while i < len(args):
-        arg = args[i]
-        
-        # 跳过非选项参数
-        if not arg.startswith("--"):
-            i += 1
-            continue
-            
-        # 处理 --key=value 格式
-        if "=" in arg:
-            key, value = arg[2:].split("=", 1)
-            argv_config[_normalize_param_name(key)] = value
-        
-        # 处理 --key value 格式
-        elif i + 1 < len(args) and not args[i + 1].startswith("--"):
-            key = arg[2:]
-            value = args[i + 1]
-            argv_config[_normalize_param_name(key)] = value
-            i += 1  # 额外前进一步
-            
-        i += 1
-        
-    return argv_config
-
-
-def load_xhs_config() -> Dict[str, str]:
-    """
-    从环境变量和命令行参数加载小红书配置
-    优先级：命令行参数 > 环境变量
-    
-    Returns:
-        Dict[str, str]: 包含配置的字典
-        
-    Raises:
-        ValueError: 如果缺少必要的配置项
-    """
-    config = {}
-    config["cookie_dir"] = os.environ.get("XHS_COOKIE_DIR", "")
-    config["sign_url"] = os.environ.get("XHS_SIGN_URL", "")
-    config["use_sign"] = os.environ.get("XHS_USE_SIGN", "true")
-    for idx, val in enumerate(sys.argv):
-        if val == "--xhs-cookie-dir" and idx + 1 < len(sys.argv):
-            config["cookie_dir"] = sys.argv[idx + 1]
-        elif val == "--sign-url" and idx + 1 < len(sys.argv):
-            config["sign_url"] = sys.argv[idx + 1]
-        elif val.startswith("--xhs-cookie-dir="):
-            config["cookie_dir"] = val.split("--xhs-cookie-dir=")[1]
-        elif val.startswith("--sign-url="):
-            config["sign_url"] = val.split("--sign-url=")[1]
-    # 验证必要的配置项
-    return config
-
+    return XhsConfig(
+        cookie_dir=os.path.expanduser(cookie_dir),
+        cookie_name=cookie_name,
+        log_level=log_level,
+        sign_url=sign_url,
+        use_sign=use_sign
+    )
 
 def get_log_level_from_config() -> str:
     """
@@ -134,8 +52,7 @@ def get_log_level_from_config() -> str:
         str: 日志级别
     """
     config = load_xhs_config()
-    return config.get("log_level", "INFO")
-
+    return config.log_level
 
 def get_sign_url_from_config() -> str:
     """
@@ -145,8 +62,7 @@ def get_sign_url_from_config() -> str:
         str: 签名服务URL，如果未指定则返回空字符串
     """
     config = load_xhs_config()
-    return config.get("sign_url", "")
-
+    return config.sign_url
 
 def get_use_sign_from_config() -> bool:
     """
@@ -156,15 +72,14 @@ def get_use_sign_from_config() -> bool:
         bool: 是否使用签名服务
     """
     config = load_xhs_config()
-    return config.get("use_sign", "true").lower() != "false"
-
+    return config.use_sign
 
 # 如果直接运行此模块，打印配置信息
 if __name__ == "__main__":
     try:
         config = load_xhs_config()
         print("加载的小红书配置:")
-        for key, value in config.items():
+        for key, value in config.__dict__.items():
             if key in ["sign_url"]:  # 敏感信息不显示完整内容
                 print(f"  {key}: ***")
             else:
