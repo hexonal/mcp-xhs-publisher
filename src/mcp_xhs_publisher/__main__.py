@@ -8,11 +8,11 @@ import sys
 # 导入官方FastMCP SDK实现
 from mcp.server.fastmcp import FastMCP
 
+import mcp_xhs_publisher.ready_flag as ready_flag
+
 from .config import config
 from .tools.tool_registry import ToolRegistry
-from .util.logging import setup_logger, log_info, log_error
-from .ready_flag import SERVER_READY as _SERVER_READY
-import mcp_xhs_publisher.ready_flag as ready_flag
+from .util.logging import log_error, log_info, setup_logger
 
 # 全局ready标志
 SERVER_READY = False

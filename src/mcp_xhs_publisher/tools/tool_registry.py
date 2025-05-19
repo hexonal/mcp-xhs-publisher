@@ -3,24 +3,20 @@ MCP工具注册模块
 
 负责注册所有小红书发布相关的MCP工具和资源
 """
-from typing import Any, List, Optional, Dict, TYPE_CHECKING
-import traceback
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 # 条件导入以避免循环引用
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
 from ..models.tool_io_schemas import (
-    PublishTextInput,
     PublishImageInput,
-    PublishVideoInput,
-    LoginResponse  # 添加手机登录输入模型导入
+    PublishTextInput,
+    PublishVideoInput,  # 添加手机登录输入模型导入
 )
 from .publish_executor import PublishExecutor
-from ..services.xhs_client import XhsApiClient
-from ..util.config_loader import get_use_sign_from_config
+
 # from .. import __main__  # 已废弃，避免循环导入
-from ..ready_flag import SERVER_READY
 
 # 导入XhsClient类，用于二维码登录
 try:

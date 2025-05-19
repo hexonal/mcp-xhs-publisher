@@ -17,6 +17,3 @@ MCP XHS Publisher
 """
 
 __version__ = "0.1.0"
-
-from .config import config
-from .tools.tool_registry import ToolRegistry 

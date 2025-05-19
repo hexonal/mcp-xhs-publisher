@@ -7,7 +7,9 @@ import os
 import sys
 import unittest
 
-from mcp_xhs_publisher.util.config_loader import load_xhs_config, get_log_level_from_config
+from mcp_xhs_publisher.util.config_loader import (
+    load_xhs_config,
+)
 
 
 class TestConfigLoader(unittest.TestCase):

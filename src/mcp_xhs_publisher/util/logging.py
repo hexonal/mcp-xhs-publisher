@@ -8,7 +8,7 @@ import logging
 import os
 import sys
 import time
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 
 class JsonFormatter(logging.Formatter):

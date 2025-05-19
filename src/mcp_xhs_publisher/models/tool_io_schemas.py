@@ -3,9 +3,10 @@ MCP小红书工具输入输出模型
 
 定义所有MCP小红书工具的输入和输出模型
 """
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
+
 
 class LoginResponse(BaseModel):
     """登录结果响应"""

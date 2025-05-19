@@ -3,11 +3,10 @@
 
 负责从环境变量和命令行参数加载小红书配置
 """
-from dataclasses import dataclass
 import argparse
 import os
-import sys
-from typing import Dict
+from dataclasses import dataclass
+
 
 @dataclass
 class XhsConfig:

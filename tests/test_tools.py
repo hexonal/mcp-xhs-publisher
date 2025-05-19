@@ -1,5 +1,7 @@
 import pytest
+
 from mcp_xhs_publisher.publisher import Publisher
+
 
 @pytest.fixture(scope="module")
 def publisher():

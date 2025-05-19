@@ -5,21 +5,19 @@
 """
 import os
 import shutil
-import sys
 import tempfile
-import time
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 import requests
 
 try:
-    from xhs import XhsClient, DataFetchError
+    from xhs import DataFetchError, XhsClient
 except ImportError:
     XhsClient = None  # 仅便于类型提示，实际运行需安装 xhs 包
     DataFetchError = Exception
 
-from ..util.cookie_manager import load_cookie, save_cookie, cookie_valid
 from ..util.config_loader import load_xhs_config
+from ..util.cookie_manager import cookie_valid, load_cookie
 
 
 class XhsApiClient:

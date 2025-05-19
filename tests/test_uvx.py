@@ -1,9 +1,10 @@
 import argparse
-import sys
 import json
+import sys
 from typing import List, Optional
-from mcp_xhs_publisher.publisher import init_publisher, Publisher
-from mcp_xhs_publisher.utils import log_info, log_error, check_files_exist
+
+from mcp_xhs_publisher.publisher import init_publisher
+from mcp_xhs_publisher.utils import check_files_exist, log_error
 
 
 def parse_topics(topics_str: Optional[str]) -> Optional[List[str]]:
