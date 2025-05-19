@@ -7,4 +7,4 @@ MCP工具模块
 from .publish_executor import PublishExecutor
 from .tool_registry import ToolRegistry
 
-__all__ = ["ToolRegistry", "PublishExecutor"] 
+__all__ = ["ToolRegistry", "PublishExecutor"]

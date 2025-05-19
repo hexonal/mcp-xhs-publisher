@@ -19,6 +19,7 @@ def parse_topics(topics_str: Optional[str]) -> Optional[List[str]]:
         return [t.strip() for t in topics_str.split(",") if t.strip()]
     return None
 
+
 def main():
     parser = argparse.ArgumentParser(description="小红书笔记自动发布 MCP 工具")
     subparsers = parser.add_subparsers(dest="mode", required=True)
@@ -52,8 +53,7 @@ def main():
     try:
         if args.mode == "text":
             result = publisher.publish_text(
-                content=args.content,
-                topics=parse_topics(args.topics)
+                content=args.content, topics=parse_topics(args.topics)
             )
         elif args.mode == "image":
             image_paths = [p.strip() for p in args.images.split(",") if p.strip()]
@@ -63,17 +63,19 @@ def main():
             result = publisher.publish_image(
                 content=args.content,
                 image_paths=image_paths,
-                topics=parse_topics(args.topics)
+                topics=parse_topics(args.topics),
             )
         elif args.mode == "video":
-            if not check_files_exist([args.video] + ([args.cover] if args.cover else [])):
+            if not check_files_exist(
+                [args.video] + ([args.cover] if args.cover else [])
+            ):
                 log_error("视频或封面文件不存在！")
                 sys.exit(1)
             result = publisher.publish_video(
                 content=args.content,
                 video_path=args.video,
                 cover_path=args.cover,
-                topics=parse_topics(args.topics)
+                topics=parse_topics(args.topics),
             )
         else:
             log_error("未知发布模式")
@@ -83,5 +85,6 @@ def main():
         log_error(f"发布失败: {e}")
         sys.exit(1)
 
+
 if __name__ == "__main__":
-    main() 
+    main()

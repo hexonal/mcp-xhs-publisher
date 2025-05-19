@@ -3,6 +3,7 @@
 
 提供小红书API的客户端封装，包括登录、cookie管理等功能
 """
+
 import os
 import shutil
 import tempfile
@@ -24,6 +25,7 @@ class XhsApiClient:
     """
     小红书API客户端，封装XhsClient并提供额外功能
     """
+
     REQUIRED_COOKIE_KEYS = ["a1", "web_session", "webId"]
 
     def __init__(self, cookie_dir: str):
@@ -42,7 +44,9 @@ class XhsApiClient:
         if cookie and cookie_valid(cookie, self.REQUIRED_COOKIE_KEYS):
             self.client = XhsClient(cookie=cookie)
         else:
-            raise RuntimeError("未获取到有效的小红书 cookie，请先登录或配置 cookie 后重试。")
+            raise RuntimeError(
+                "未获取到有效的小红书 cookie，请先登录或配置 cookie 后重试。"
+            )
 
     @staticmethod
     def build_from_env() -> "XhsApiClient":
@@ -55,9 +59,7 @@ class XhsApiClient:
             ValueError: 如果未找到必要的账号信息
         """
         config = load_xhs_config()
-        return XhsApiClient(
-            cookie_dir=config.cookie_dir
-        )
+        return XhsApiClient(cookie_dir=config.cookie_dir)
 
     def _is_logged_in(self) -> bool:
         """检查是否已登录"""
@@ -66,6 +68,7 @@ class XhsApiClient:
             return bool(info and info.get("nickname"))
         except Exception:
             return False
+
     def _download_images(self, image_paths: List[str]) -> (List[str], List[str]):
         """
         下载 https 图片到临时目录，返回本地路径列表和临时文件列表。
@@ -97,29 +100,27 @@ class XhsApiClient:
         """获取笔记信息"""
         return self.client.get_note_by_id(note_id)
 
-    def create_text_note(self, content: str, topics: Optional[List[str]] = None) -> Dict[str, Any]:
+    def create_text_note(
+        self, content: str, topics: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """创建纯文本笔记"""
         try:
             result = self.client.create_note(
-                title="",
-                desc=content,
-                note_type="normal",
-                topics=topics or []
+                title="", desc=content, note_type="normal", topics=topics or []
             )
             return {"status": "success", "type": "text", "result": result}
         except Exception as e:
             return {"status": "error", "type": "text", "error": str(e)}
 
-    def create_image_note(self, content: str, image_paths: List[str], topics: Optional[List[str]] = None) -> Dict[str, Any]:
+    def create_image_note(
+        self, content: str, image_paths: List[str], topics: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """创建图文笔记"""
         tmp_files = []
         try:
             local_paths, tmp_files = self._download_images(image_paths)
             result = self.client.create_image_note(
-                title="",
-                desc=content,
-                files=local_paths,
-                topics=topics or []
+                title="", desc=content, files=local_paths, topics=topics or []
             )
             return {"status": "success", "type": "image", "result": result}
         except Exception as e:
@@ -131,7 +132,13 @@ class XhsApiClient:
                 except Exception:
                     pass
 
-    def create_video_note(self, content: str, video_path: str, cover_path: Optional[str] = None, topics: Optional[List[str]] = None) -> Dict[str, Any]:
+    def create_video_note(
+        self,
+        content: str,
+        video_path: str,
+        cover_path: Optional[str] = None,
+        topics: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
         """创建视频笔记"""
         try:
             result = self.client.create_video_note(
@@ -139,8 +146,8 @@ class XhsApiClient:
                 desc=content,
                 video_path=video_path,
                 cover_path=cover_path,
-                topics=topics or []
+                topics=topics or [],
             )
             return {"status": "success", "type": "video", "result": result}
         except Exception as e:
-            return {"status": "error", "type": "video", "error": str(e)} 
+            return {"status": "error", "type": "video", "error": str(e)}
