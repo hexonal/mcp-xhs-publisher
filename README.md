@@ -50,14 +50,14 @@ pip install -e .  # 或 pip install -e ".[mcp,dev]" 安装可选依赖
 ### 命令行启动
 
 ```bash
-# 使用默认配置启动
-python -m mcp_xhs_publisher
+# 使用配置启动（必须指定cookie目录）
+python -m mcp_xhs_publisher --cookie-dir=~/.xhs_cookies
 
 # 或使用可执行脚本方式
-mcp-xhs-publisher
+mcp-xhs-publisher --cookie-dir=~/.xhs_cookies
 
 # 指定日志级别启动
-python -m mcp_xhs_publisher --log-level=DEBUG
+python -m mcp_xhs_publisher --cookie-dir=~/.xhs_cookies --log-level=DEBUG
 ```
 
 ### 环境变量配置
@@ -68,10 +68,9 @@ python -m mcp_xhs_publisher --log-level=DEBUG
 # 设置环境变量
 export MCP_LOG_LEVEL=INFO              # 日志级别: DEBUG, INFO, WARNING, ERROR, CRITICAL
 export XHS_COOKIE_DIR=~/.xhs_cookies   # Cookie存储目录
-export XHS_SIGN_URL=https://example.com/sign  # 签名服务URL
 
-# 启动服务器
-python -m mcp_xhs_publisher
+# 启动服务器（命令行参数优先级更高）
+python -m mcp_xhs_publisher --cookie-dir=~/.xhs_cookies
 ```
 
 ## 命令行参数
@@ -79,15 +78,13 @@ python -m mcp_xhs_publisher
 也可以通过命令行参数进行配置：
 
 ```bash
-# 使用命令行参数
-python -m mcp_xhs_publisher --log-level=DEBUG
+python -m mcp_xhs_publisher --cookie-dir=~/.xhs_cookies --log-level=DEBUG
 ```
 
 支持的命令行参数：
 
+- `--cookie-dir`: Cookie存储目录（必填）
 - `--log-level`: 日志级别
-- `--cookie-dir`: Cookie存储目录
-- `--sign-url`: 签名服务URL
 
 ## 配置加载机制
 
@@ -101,42 +98,19 @@ python -m mcp_xhs_publisher --log-level=DEBUG
 ```python
 from mcp_xhs_publisher.util.config_loader import load_xhs_config
 
-# 加载完整配置
+# 加载完整配置（返回 dataclass 对象）
 config = load_xhs_config()
-cookie_dir = config.get("cookie_dir")
-sign_url = config.get("sign_url")
-log_level = config.get("log_level")
+cookie_dir = config.cookie_dir
+log_level = config.log_level
 
 # 或使用辅助函数获取特定配置
-from mcp_xhs_publisher.util.config_loader import get_cookie_dir_from_config, get_sign_url_from_config, get_log_level_from_config
-cookie_dir = get_cookie_dir_from_config()
-sign_url = get_sign_url_from_config()
-log_level = get_log_level_from_config()  # 返回 logging.INFO 等数值
+from mcp_xhs_publisher.util.config_loader import get_log_level_from_config
+log_level = get_log_level_from_config()  # 返回字符串，如 "INFO"
 ```
 
-配置系统支持灵活的参数名称，兼容多种表述方式：
-
-| 配置项 | 环境变量 | 命令行参数 (均可使用) |
-|-------|----------|----------------------|
-| Cookie目录 | XHS_COOKIE_DIR | --cookie-dir, --cookie_dir, --cookies, --cookie_path |
-| 签名服务URL | XHS_SIGN_URL | --sign-url, --sign_url, --signurl |
-| 日志级别 | MCP_LOG_LEVEL | --log-level, --log_level, --loglevel |
-
-**例如**，以下配置方式均有效：
-
-```bash
-# 环境变量方式
-export XHS_COOKIE_DIR="~/.xhs_cookies"
-export MCP_LOG_LEVEL="DEBUG"
-
-# 命令行方式1
-python -m mcp_xhs_publisher --cookie-dir ~/.xhs_cookies --log-level DEBUG
-
-# 命令行方式2
-python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
-```
-
-开发者可直接使用这些工具函数在自己的模块中加载配置，而不需要重复实现配置解析逻辑。
+**注意：**
+- cookie_dir 必须通过命令行参数或环境变量显式指定，否则启动会报错。
+- 配置对象为 dataclass，属性通过点号访问。
 
 ## MCP 服务器工具说明
 
@@ -156,62 +130,25 @@ python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
 
 | 工具名称 | 描述 | 参数 |
 |---------|------|------|
-| `publish_text` | 发布纯文本笔记 | `content`, `topics?`, `account?` |
-| `publish_image` | 发布图文笔记 | `content`, `image_paths`, `topics?`, `account?` |
-| `publish_video` | 发布视频笔记 | `content`, `video_path`, `cover_path?`, `topics?`, `account?` |
-| `generate_qrcode` | 生成小红书账号登录二维码（非阻塞） | 无 |
-| `check_qrcode_status` | 检查二维码扫描状态（需前端轮询） | `qr_id`, `qr_code` |
+| `publish_text` | 发布纯文本笔记 | `content`, `topics?` |
+| `publish_image` | 发布图文笔记 | `content`, `image_paths`, `topics?` |
+| `publish_video` | 发布视频笔记 | `content`, `video_path`, `cover_path?`, `topics?` |
+| `is_logged_in` | 检查当前账号是否已登录 | 无 |
 
 #### 资源 (Resources)
 
 | 资源 URI 模式 | 描述 | 参数 |
 |--------------|------|------|
-| `xhs-note://{note_id}` | 获取笔记元数据 | `note_id`, `account?` |
-| `xhs-user://{account}` | 获取用户信息 | `account?` |
+| `xhs-note://{note_id}` | 获取笔记元数据 | `note_id` |
+| `xhs-user://` | 获取用户信息 | 无 |
 
 ### 工具参数与返回值
-
-#### 0. 二维码登录相关
-
-**二维码生成（generate_qrcode）**
-- 非阻塞，调用后立即返回二维码信息（url、id、code），不会阻塞或轮询。
-- 由前端/调用方负责定时调用 `check_qrcode_status` 轮询二维码状态。
-
-**二维码状态检查（check_qrcode_status）**
-- 单次检查二维码扫码/登录状态，需传入 `qr_id` 和 `qr_code`。
-- 前端/调用方应定时轮询，直到登录成功或二维码失效。
-
-**返回示例**：
-```json
-{
-    "status": "success",
-    "message": "二维码生成成功，请使用小红书APP扫描",
-    "qr_url": "https://...",
-    "qr_id": "...",
-    "qr_code": "..."
-}
-```
-
-```json
-{
-    "status": "pending",
-    "message": "等待扫码或确认"
-}
-```
-
-```json
-{
-    "status": "success",
-    "message": "登录成功"
-}
-```
 
 #### 1. 发布纯文本笔记
 
 **参数**:
 - `content`: 笔记文本内容
 - `topics`: (可选) 话题关键词列表
-- `account`: (可选) 账号标识，默认为 "default"
 
 **返回示例**:
 ```json
@@ -231,7 +168,6 @@ python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
 - `content`: 笔记文本内容
 - `image_paths`: 图片路径列表，支持本地路径和URL链接
 - `topics`: (可选) 话题关键词列表
-- `account`: (可选) 账号标识，默认为 "default"
 
 **返回示例**:
 ```json
@@ -253,7 +189,6 @@ python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
 - `video_path`: 视频文件路径
 - `cover_path`: (可选) 封面图片路径
 - `topics`: (可选) 话题关键词列表
-- `account`: (可选) 账号标识，默认为 "default"
 
 **返回示例**:
 ```json
@@ -265,6 +200,18 @@ python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
         "time": "2023-06-01 16:45:00",
         "duration": "00:01:30"
     }
+}
+```
+
+#### 4. 检查登录状态
+
+**参数**:
+- 无
+
+**返回示例**:
+```json
+{
+    "logged_in": true
 }
 ```
 
@@ -289,8 +236,7 @@ python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
       "args": ["mcp-xhs-publisher"],
       "env": {
         "MCP_LOG_LEVEL": "INFO",
-        "XHS_COOKIE_DIR": "~/.xhs_cookies",
-        "XHS_SIGN_URL": "https://example.com/sign"
+        "XHS_COOKIE_DIR": "~/.xhs_cookies"
       }
     }
   }
@@ -314,8 +260,7 @@ python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
       "args": ["mcp-xhs-publisher"],
       "env": {
         "MCP_LOG_LEVEL": "INFO",
-        "XHS_COOKIE_DIR": "~/.xhs_cookies",
-        "XHS_SIGN_URL": "https://example.com/sign"
+        "XHS_COOKIE_DIR": "~/.xhs_cookies"
       }
     }
   }
@@ -337,8 +282,7 @@ python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
       "args": ["mcp-xhs-publisher"],
       "env": {
         "MCP_LOG_LEVEL": "INFO",
-        "XHS_COOKIE_DIR": "~/.xhs_cookies",
-        "XHS_SIGN_URL": "https://example.com/sign"
+        "XHS_COOKIE_DIR": "~/.xhs_cookies"
       }
     }
   }
@@ -360,8 +304,7 @@ python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
         "args": ["mcp-xhs-publisher"],
         "env": {
           "MCP_LOG_LEVEL": "INFO",
-          "XHS_COOKIE_DIR": "~/.xhs_cookies",
-          "XHS_SIGN_URL": "https://example.com/sign"
+          "XHS_COOKIE_DIR": "~/.xhs_cookies"
         }
       }
     }
@@ -371,7 +314,7 @@ python -m mcp_xhs_publisher --cookies ~/.xhs_cookies --loglevel DEBUG
 
 ## 账号与 cookie 管理
 
-- 多账号支持：cookie 自动存储于 `~/.xhs_cookies/{account}.cookie`
+- 多账号支持：cookie 自动存储于 `~/.xhs_cookies/` 目录下
 - 首次使用时自动触发扫码登录
 - 自动检测 cookie 有效性，失效时自动重新登录
 

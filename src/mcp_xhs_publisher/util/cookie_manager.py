@@ -24,18 +24,6 @@ def load_cookie(cookie_path: str) -> Optional[str]:
     return None
 
 
-def save_cookie(cookie_path: str, cookie: str) -> None:
-    """
-    保存cookie到文件
-    
-    Args:
-        cookie_path: cookie文件保存路径
-        cookie: cookie字符串
-    """
-    with open(cookie_path, "w") as f:
-        f.write(cookie)
-
-
 def cookie_valid(cookie: str, required_keys: List[str]) -> bool:
     """
     检查cookie是否包含必要字段。

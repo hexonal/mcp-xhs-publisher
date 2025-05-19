@@ -3,7 +3,7 @@ from mcp_xhs_publisher.publisher import Publisher
 
 @pytest.fixture(scope="module")
 def publisher():
-    # 可根据需要传递 account、cookie_dir、sign_url
+    # 可根据需要传递 cookie_dir、cookie_name、sign_url 等参数
     return Publisher.build()
 
 def test_publish_text(publisher):

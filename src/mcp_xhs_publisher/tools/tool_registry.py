@@ -48,7 +48,6 @@ class ToolRegistry:
         Args:
             mcp_server: MCP服务器实例
         """
-        # self._register_login_tools(mcp_server)  # 已移除登录相关注册
         self._register_publish_tools(mcp_server)
         self._register_resource_tools(mcp_server)
     
@@ -131,6 +130,22 @@ class ToolRegistry:
             )
             result = self.executor.publish_video(params)
             return result.dict()
+
+        @mcp_server.tool(
+            name="is_logged_in",
+            description="检查当前小红书账号是否已登录，返回布尔值"
+        )
+        def is_logged_in() -> Dict[str, Any]:
+            """
+            检查当前小红书账号是否已登录
+            Returns:
+                Dict[str, Any]: {"logged_in": True/False}
+            """
+            try:
+                status = self.executor.client._is_logged_in()
+                return {"logged_in": status}
+            except Exception as e:
+                return {"status": "error", "message": str(e)}
     
     def _register_resource_tools(self, mcp_server: "FastMCP") -> None:
         """

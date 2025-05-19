@@ -88,8 +88,7 @@ class Config:
         # MCP服务器配置
         env_mapping = {
             "MCP_LOG_LEVEL": "log_level",
-            "XHS_COOKIE_DIR": "xhs_cookie_dir",
-            "XHS_SIGN_URL": "xhs_sign_url"
+            "XHS_COOKIE_DIR": "xhs_cookie_dir"
         }
         
         for env_name, config_key in env_mapping.items():
@@ -138,8 +137,7 @@ class Config:
         """
         key_map = {
             "log-level": "log_level",
-            "cookie-dir": "xhs_cookie_dir",
-            "sign-url": "xhs_sign_url"
+            "cookie-dir": "xhs_cookie_dir"
         }
         
         config_key = key_map.get(key, key)

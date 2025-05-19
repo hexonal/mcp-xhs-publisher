@@ -28,21 +28,19 @@ class XhsApiClient:
     """
     REQUIRED_COOKIE_KEYS = ["a1", "web_session", "webId"]
 
-    def __init__(self, cookie_dir: str, cookie_name: str):
+    def __init__(self, cookie_dir: str):
         """
         初始化小红书客户端。
         Args:
             cookie_dir: cookie 存储目录，必须显式指定
-            cookie_name: cookie 文件名，必须显式指定
         """
         self.cookie_dir = os.path.expanduser(cookie_dir)
-        self.cookie_path = os.path.join(self.cookie_dir, cookie_name)
         self.client = None
 
         if not os.path.exists(self.cookie_dir):
             os.makedirs(self.cookie_dir)
 
-        cookie = load_cookie(self.cookie_path)
+        cookie = load_cookie(self.cookie_dir)
         if cookie and cookie_valid(cookie, self.REQUIRED_COOKIE_KEYS):
             self.client = XhsClient(cookie=cookie)
         else:
@@ -60,8 +58,7 @@ class XhsApiClient:
         """
         config = load_xhs_config()
         return XhsApiClient(
-            cookie_dir=config.cookie_dir,
-            cookie_name=config.cookie_name
+            cookie_dir=config.cookie_dir
         )
 
     def _is_logged_in(self) -> bool:
